@@ -5,16 +5,19 @@ import { ReviewResult, Scenario } from "@/lib/types";
 
 export default function ResultsScreen({
   scenario,
+  submissionText,
   result,
   gameOver,
   onContinue,
 }: {
   scenario: Scenario;
+  submissionText: string;
   result: ReviewResult;
   gameOver: boolean;
   onContinue: () => void;
 }) {
   const [openReasoning, setOpenReasoning] = useState<string | null>(null);
+  const [showSubmission, setShowSubmission] = useState(true);
 
   return (
     <section className="space-y-6">
@@ -37,7 +40,21 @@ export default function ResultsScreen({
           </span>
         </div>
 
-        <ul className="space-y-2">
+        <div>
+          <button
+            onClick={() => setShowSubmission((s) => !s)}
+            className="font-mono text-[11px] text-inkFaint underline underline-offset-2"
+          >
+            {showSubmission ? "hide" : "show"} your round {result.round} answer
+          </button>
+          {showSubmission && (
+            <p className="mt-2 text-[14px] font-mono text-inkFaint whitespace-pre-wrap border-l-2 border-paperLine pl-3">
+              {submissionText}
+            </p>
+          )}
+        </div>
+
+        <ul className="space-y-2 border-t border-paperLine pt-3">
           {result.perCriterion.map((c) => {
             const rubricItem = scenario.rubric.find((r) => r.id === c.id);
             const isOpen = openReasoning === c.id;
