@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MentorStyle } from "@/lib/types";
 import { MENTOR_INFO } from "@/lib/mentor";
+import MentorAvatar from "./MentorAvatar";
 
 export default function OnboardingScreen({
   name,
@@ -34,7 +35,7 @@ export default function OnboardingScreen({
                   selected ? "border-stamp bg-panel" : "border-paperLine"
                 }`}
               >
-                <div className="text-2xl">{m.emoji}</div>
+                <MentorAvatar src={m.images.neutral} alt={m.name} className="w-20 h-20 mb-1" />
                 <p className="text-[14px] font-medium">{m.name}</p>
                 <p className="font-mono text-[11px] text-inkFaint">{m.blurb}</p>
               </button>

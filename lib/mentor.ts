@@ -1,8 +1,45 @@
 import { MentorStyle } from "./types";
 
-// Real mascot art is being designed separately (see design doc, "Global UI & mentor system") —
-// this is just enough of a stand-in identity to make the mentor feel consistent across screens.
-export const MENTOR_INFO: Record<MentorStyle, { name: string; emoji: string; blurb: string }> = {
-  easy: { name: "Casey", emoji: "🙂", blurb: "chill — walks you through it" },
-  serious: { name: "Morgan", emoji: "🧐", blurb: "brisk — points you at what to read" },
+export interface MentorPoses {
+  neutral: string;
+  talking: string;
+  surprised: string;
+}
+
+export const MENTOR_INFO: Record<
+  MentorStyle,
+  { name: string; emoji: string; blurb: string; images: MentorPoses; bodyImages: MentorPoses }
+> = {
+  easy: {
+    name: "Casey",
+    emoji: "🙂",
+    blurb: "kind — walks you through it",
+    images: {
+      neutral: "/mentors/casey-neutral.png",
+      talking: "/mentors/casey-talking.png",
+      surprised: "/mentors/casey-surprised.png",
+    },
+    // trimmed to the character's own bounding box (no transparent padding) so the
+    // half-body chat-widget icon can render the cutout directly, at its natural shape
+    bodyImages: {
+      neutral: "/mentors/body/casey-neutral.png",
+      talking: "/mentors/body/casey-talking.png",
+      surprised: "/mentors/body/casey-surprised.png",
+    },
+  },
+  serious: {
+    name: "Morgan",
+    emoji: "🧐",
+    blurb: "busy — points you at what to read",
+    images: {
+      neutral: "/mentors/morgan-neutral.png",
+      talking: "/mentors/morgan-talking.png",
+      surprised: "/mentors/morgan-surprised.png",
+    },
+    bodyImages: {
+      neutral: "/mentors/body/morgan-neutral.png",
+      talking: "/mentors/body/morgan-talking.png",
+      surprised: "/mentors/body/morgan-surprised.png",
+    },
+  },
 };

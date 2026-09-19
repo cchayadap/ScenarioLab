@@ -21,6 +21,16 @@ export interface CriterionResult {
   comment: string; // 1-2 sentence justification tied to the student's actual submission
 }
 
+export interface ModelAnswer {
+  label: string; // short descriptor of the approach, e.g. "concise & direct"
+  text: string; // the example answer itself
+}
+
+export interface ReviewDiagram {
+  title: string; // short caption, e.g. "A normalized schema for this fix"
+  mermaid: string; // Mermaid diagram definition, e.g. "flowchart TD\nA[...] --> B[...]"
+}
+
 export interface ReviewResult {
   round: number;
   perCriterion: CriterionResult[];
@@ -30,6 +40,8 @@ export interface ReviewResult {
   twist?: string; // optional escalation/curveball injected for the next round
   gameOver: boolean; // true if passed OR round === maxRounds
   anecdote?: string; // short related note pulled from the source material to help them improve
+  modelAnswers?: ModelAnswer[]; // alternate strong answers shown at gameOver, for comparison even after passing
+  diagram?: ReviewDiagram; // visual of a strong solution's structure, shown alongside modelAnswers at gameOver
 }
 
 export interface SubmissionRound {

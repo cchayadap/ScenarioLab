@@ -11,15 +11,16 @@ export default function WelcomeScreen({ onSignIn }: { onSignIn: (name: string) =
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-14 lg:py-20">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/logo.png" alt="ScenarioLab" className="h-14 w-auto mb-14 lg:mb-20" />
+      <div className="flex justify-center mb-10 lg:mb-14">
+        <button onClick={() => setName("")} aria-label="Go to home">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="ScenarioLab" className="h-20 lg:h-28 w-auto" />
+        </button>
+      </div>
 
       <div className="flex flex-col lg:flex-row items-center gap-14">
         {/* pitch */}
         <div className="flex-1 space-y-6 w-full">
-          <p className="font-mono text-xs tracking-wide text-stamp uppercase">
-            intake / new assignment
-          </p>
           <h1 className="font-display text-4xl lg:text-[44px] font-bold leading-tight text-ink">
             Every lecture is
             <br />

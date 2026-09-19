@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Profile } from "@/lib/types";
+import { MENTOR_INFO } from "@/lib/mentor";
+import MentorAvatar from "./MentorAvatar";
 
 export default function SettingsMenu({
   profile,
@@ -34,12 +36,17 @@ export default function SettingsMenu({
                 <button
                   key={style}
                   onClick={() => onChange({ ...profile, mentorStyle: style })}
-                  className={`flex-1 border px-2 py-1.5 text-sm ${
+                  className={`flex-1 border px-2 py-2 text-sm flex flex-col items-center gap-1 ${
                     profile.mentorStyle === style
                       ? "border-stamp bg-stamp text-paper"
                       : "border-paperLine text-inkFaint"
                   }`}
                 >
+                  <MentorAvatar
+                    src={MENTOR_INFO[style].images.neutral}
+                    alt={MENTOR_INFO[style].name}
+                    className="w-12 h-12"
+                  />
                   {style}
                 </button>
               ))}
