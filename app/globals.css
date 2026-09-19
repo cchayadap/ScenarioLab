@@ -3,22 +3,33 @@
 @tailwind utilities;
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: #f2f1ec;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background-color: #e8ebef;
+  background-image: linear-gradient(#c3cad4 1px, transparent 1px),
+    linear-gradient(90deg, #c3cad4 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
 }
 
 ::selection {
-  background: #2c4a6333;
+  background: #1d5fd633;
 }
 
-/* ticket stub: a torn/perforated top edge on the scenario card, used because it's
-   thematically load-bearing (this literally is a work ticket), not decoration for
-   its own sake. */
-.ticket-edge {
-  background-image: radial-gradient(circle at 6px 0, transparent 5px, #f2f1ec 5px);
-  background-size: 12px 6px;
-  background-repeat: repeat-x;
-  background-position: top left;
-  height: 6px;
-  margin-top: -1px;
+/* window-chrome: a fake app titlebar (traffic-light dots + a filename-style
+   label) used on a few key panels to lean into the "workplace computer" feel —
+   this literally is a task open in a window on someone's desktop. */
+.win-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #dde1e7;
+  border-bottom: 1px solid #c3cad4;
+}
+
+.win-titlebar .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #aab2bd;
 }

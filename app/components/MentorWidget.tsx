@@ -46,7 +46,15 @@ export default function MentorWidget({
   return (
     <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
       {open && (
-        <div className="w-80 max-h-96 flex flex-col border border-paperLine bg-paper shadow-lg">
+        <div className="w-80 max-h-96 flex flex-col border border-paperLine bg-panel shadow-lg">
+          <div className="win-titlebar justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="dot" />
+              <span className="dot" />
+              <span className="dot" />
+            </div>
+            <span className="font-mono text-[11px] text-inkFaint">mentor.chat</span>
+          </div>
           <div className="px-4 py-2.5 border-b border-paperLine flex items-center gap-2">
             <span className="text-lg leading-none">{mentor.emoji}</span>
             <div className="leading-tight">

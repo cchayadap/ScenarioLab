@@ -15,7 +15,7 @@ export default function TaskDetailScreen({
     <section className="space-y-6">
       <div>
         <span className="font-mono text-xs text-stamp">{scenario.role}</span>
-        <h2 className="font-display text-xl mt-1">{scenario.title}</h2>
+        <h2 className="font-display text-xl font-semibold mt-1">{scenario.title}</h2>
       </div>
 
       <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{scenario.stakes}</p>

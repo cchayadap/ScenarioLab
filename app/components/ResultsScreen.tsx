@@ -18,12 +18,23 @@ export default function ResultsScreen({
 
   return (
     <section className="space-y-6">
-      <div className="border border-paperLine px-5 py-5 space-y-3">
+      <div className="border border-paperLine bg-panel">
+        <div className="win-titlebar">
+          <span className="dot" />
+          <span className="dot" />
+          <span className="dot" />
+          <span className="font-mono text-[11px] text-inkFaint ml-1">results.log</span>
+        </div>
+        <div className="px-5 py-5 space-y-3">
         <div className="flex items-baseline justify-between">
-          <h3 className="font-display text-lg">
+          <h3 className="font-display text-lg font-semibold">
             {result.passed ? "Design approved" : gameOver ? "Round limit reached" : "Needs another pass"}
           </h3>
-          <span className="font-mono text-sm">{result.score}/100</span>
+          <span
+            className={`font-mono text-sm ${result.passed ? "text-good" : "text-ink"}`}
+          >
+            {result.score}/100
+          </span>
         </div>
 
         <ul className="space-y-2">
@@ -63,6 +74,7 @@ export default function ResultsScreen({
             {result.anecdote}
           </div>
         )}
+        </div>
       </div>
 
       <button

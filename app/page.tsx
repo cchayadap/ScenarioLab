@@ -156,8 +156,12 @@ export default function Home() {
     }
   }
 
-  async function handleRequestHint(): Promise<string> {
-    if (!activeTask?.scenario || !profile) return "Couldn't get a hint right now.";
+  async function handleRequestHint(): Promise<
+    { ok: true; hint: string } | { ok: false; error: string }
+  > {
+    if (!activeTask?.scenario || !profile) {
+      return { ok: false, error: "Couldn't get a hint right now" };
+    }
     try {
       const res = await fetch("/api/hint", {
         method: "POST",
@@ -170,11 +174,35 @@ export default function Home() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || "Failed to get a hint");
       updateActiveTask({ hintsUsed: activeTask.hintsUsed + 1 });
-      return data.hint as string;
-    } catch {
-      return "Couldn't reach the mentor for a hint — try again in a sec.";
+      return { ok: true, hint: data.hint as string };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message || "Couldn't reach the mentor" };
+    }
+  }
+
+  async function handleSimplify(): Promise<
+    { ok: true; text: string } | { ok: false; error: string }
+  > {
+    if (!activeTask?.scenario || !profile) {
+      return { ok: false, error: "Couldn't reach the mentor" };
+    }
+    try {
+      const res = await fetch("/api/ask-mentor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scenario: activeTask.scenario,
+          question: "Can you explain what this task is actually asking me to do, in simpler, plainer terms?",
+          mentorStyle: profile.mentorStyle,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to simplify");
+      return { ok: true, text: data.answer as string };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message || "Couldn't reach the mentor" };
     }
   }
 
@@ -260,16 +288,27 @@ export default function Home() {
         />
       )}
 
-      <header className="mb-10 border-b border-paperLine pb-6">
-        <p className="font-mono text-xs text-inkFaint mb-1">intake / new assignment</p>
-        <h1 className="font-display text-[28px] leading-tight">ScenarioLab</h1>
-      </header>
+      <div className="border border-paperLine bg-panel shadow-sm">
+        <div className="win-titlebar">
+          <span className="dot" />
+          <span className="dot" />
+          <span className="dot" />
+          <span className="font-mono text-[11px] text-inkFaint ml-1">
+            scenariolab — ~/{profile ? profile.name.toLowerCase() : "guest"}/session
+          </span>
+        </div>
 
-      {error && (
-        <div className="mb-6 border-l-2 border-bad pl-3 py-1 text-sm text-bad">{error}</div>
-      )}
+        <div className="px-6 py-8">
+          <header className="mb-8 border-b border-paperLine pb-5">
+            <p className="font-mono text-xs text-inkFaint mb-1">intake / new assignment</p>
+            <h1 className="font-display text-2xl font-semibold leading-tight">ScenarioLab</h1>
+          </header>
 
-      {step === "loading" && <p className="font-mono text-sm text-inkFaint">loading...</p>}
+          {error && (
+            <div className="mb-6 border-l-2 border-bad pl-3 py-1 text-sm text-bad">{error}</div>
+          )}
+
+          {step === "loading" && <p className="font-mono text-sm text-inkFaint">loading...</p>}
 
       {step === "welcome" && <WelcomeScreen onSignIn={handleSignIn} />}
 
@@ -320,6 +359,7 @@ export default function Home() {
           onSubmissionChange={setSubmissionText}
           onSubmit={handleSubmitDesign}
           onRequestHint={handleRequestHint}
+          onSimplify={handleSimplify}
           submitting={submitting}
           activeTwist={activeTwist}
         />
@@ -333,6 +373,9 @@ export default function Home() {
           onContinue={handleContinueFromResults}
         />
       )}
+
+        </div>
+      </div>
 
       {(step === "workspace" || step === "results") && activeTask?.scenario && profile && (
         <MentorWidget scenario={activeTask.scenario} mentorStyle={profile.mentorStyle} />

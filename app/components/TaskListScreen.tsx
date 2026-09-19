@@ -37,7 +37,7 @@ export default function TaskListScreen({
           <button
             key={t.id}
             onClick={() => onOpenTask(t.id)}
-            className="border border-paperLine bg-white/60 hover:border-stamp px-4 py-5 text-left space-y-2"
+            className="border border-paperLine bg-panel hover:border-stamp px-4 py-5 text-left space-y-2"
           >
             <div className="text-3xl">📁</div>
             <p className="text-[14px] font-medium leading-snug">{t.topic}</p>
