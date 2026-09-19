@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ReactFlow, {
   Background,
+  ConnectionMode,
   Controls,
   Handle,
   MarkerType,
@@ -53,6 +54,11 @@ function ProcessNode({ data, selected }: NodeProps<{ label: string }>) {
   );
 }
 
+// The node's bounding box is an unrotated square, so Top/Right/Bottom/Left handle positions
+// land exactly on the diamond's four visual points (rotating a square 45° turns its corners
+// into the box's top/right/bottom/left centers) — one handle pair per point below.
+const DECISION_CORNERS = [Position.Top, Position.Right, Position.Bottom, Position.Left];
+
 function DecisionNode({ data, selected }: NodeProps<{ label: string }>) {
   return (
     <div className="relative w-[110px] h-[110px]">
@@ -60,8 +66,12 @@ function DecisionNode({ data, selected }: NodeProps<{ label: string }>) {
       <div className="absolute inset-0 flex items-center justify-center text-center text-[12px] font-mono px-5 leading-tight">
         {data.label}
       </div>
-      <Handle type="target" position={Position.Top} className="!bg-inkFaint" />
-      <Handle type="source" position={Position.Bottom} className="!bg-inkFaint" />
+      {DECISION_CORNERS.map((pos) => (
+        <Handle key={`t-${pos}`} type="target" position={pos} id={`t-${pos}`} className="!bg-inkFaint" />
+      ))}
+      {DECISION_CORNERS.map((pos) => (
+        <Handle key={`s-${pos}`} type="source" position={pos} id={`s-${pos}`} className="!bg-inkFaint" />
+      ))}
     </div>
   );
 }
@@ -240,6 +250,7 @@ export default function DiagramEditor({
           nodesDraggable={!readOnly}
           nodesConnectable={!readOnly}
           elementsSelectable={!readOnly}
+          connectionMode={ConnectionMode.Loose}
           panOnDrag
           zoomOnScroll
           fitView
