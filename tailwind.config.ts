@@ -8,21 +8,22 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // "work order" palette — off-white paper, near-black ink, one decisive
-        // accent (desaturated navy, like stamped approval ink). Deliberately
-        // not the purple/cyan-on-dark AI default.
-        paper: "#f2f1ec",
-        paperLine: "#dcd9cd",
-        ink: "#1c1b17",
-        inkFaint: "#6b6a60",
-        stamp: "#2c4a63", // primary accent — used sparingly, not glowing
-        good: "#3f6b3f",
-        bad: "#8c3a2b",
+        // "workstation" palette — cool slate-gray desktop background, crisp
+        // borders, one decisive technical-blue accent. Reads like an internal
+        // engineering tool, not the purple/cyan-on-dark AI default.
+        paper: "#e8ebef",
+        panel: "#f8f9fb",
+        paperLine: "#c3cad4",
+        ink: "#161b22",
+        inkFaint: "#5b6472",
+        stamp: "#1d5fd6", // primary accent — used sparingly, not glowing
+        good: "#1f8a4c",
+        bad: "#c8382f",
       },
       fontFamily: {
-        // Serif for scenario/headline copy, monospace for ticket metadata
-        // (round counter, role tag). Neither is Inter/system-sans-everywhere.
-        display: ["Georgia", "Cambria", "Times New Roman", "serif"],
+        // Monospace everywhere — the whole point of the "workplace computer"
+        // theme is that it reads like a terminal/IDE, not a marketing site.
+        display: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
       },
       borderRadius: {

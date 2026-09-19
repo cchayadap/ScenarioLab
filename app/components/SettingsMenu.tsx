@@ -20,13 +20,13 @@ export default function SettingsMenu({
     <div className="fixed top-5 right-5 z-40">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-9 h-9 border border-paperLine bg-paper flex items-center justify-center text-inkFaint hover:text-ink"
+        className="w-9 h-9 border border-paperLine bg-panel flex items-center justify-center text-inkFaint hover:text-ink"
         aria-label="Settings"
       >
         ⚙
       </button>
       {open && (
-        <div className="mt-2 w-64 border border-paperLine bg-paper shadow-lg p-4 space-y-4">
+        <div className="mt-2 w-64 border border-paperLine bg-panel shadow-lg p-4 space-y-4">
           <div>
             <label className="block font-mono text-xs text-inkFaint mb-1">mentor style</label>
             <div className="flex gap-2">

@@ -31,7 +31,7 @@ export default function OnboardingScreen({
                 key={style}
                 onClick={() => setMentorStyle(style)}
                 className={`border px-4 py-4 text-left space-y-1 ${
-                  selected ? "border-stamp bg-white/60" : "border-paperLine"
+                  selected ? "border-stamp bg-panel" : "border-paperLine"
                 }`}
               >
                 <div className="text-2xl">{m.emoji}</div>

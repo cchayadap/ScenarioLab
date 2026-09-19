@@ -11,6 +11,7 @@ export default function WorkspaceScreen({
   onSubmissionChange,
   onSubmit,
   onRequestHint,
+  onSimplify,
   submitting,
   activeTwist,
 }: {
@@ -20,22 +21,41 @@ export default function WorkspaceScreen({
   submissionText: string;
   onSubmissionChange: (text: string) => void;
   onSubmit: () => void;
-  onRequestHint: () => Promise<string>;
+  onRequestHint: () => Promise<{ ok: true; hint: string } | { ok: false; error: string }>;
+  onSimplify: () => Promise<{ ok: true; text: string } | { ok: false; error: string }>;
   submitting: boolean;
   activeTwist: string | null;
 }) {
   const [showDescription, setShowDescription] = useState(true);
   const [hints, setHints] = useState<string[]>([]);
   const [hintLoading, setHintLoading] = useState(false);
+  const [hintError, setHintError] = useState<string | null>(null);
+  const [simplified, setSimplified] = useState<string | null>(null);
+  const [simplifyLoading, setSimplifyLoading] = useState(false);
+  const [simplifyError, setSimplifyError] = useState<string | null>(null);
 
   async function handleHint() {
     setHintLoading(true);
-    try {
-      const hint = await onRequestHint();
-      setHints((h) => [...h, hint]);
-    } finally {
-      setHintLoading(false);
+    setHintError(null);
+    const result = await onRequestHint();
+    if (result.ok) {
+      setHints((h) => [...h, result.hint]);
+    } else {
+      setHintError(result.error);
     }
+    setHintLoading(false);
+  }
+
+  async function handleSimplify() {
+    setSimplifyLoading(true);
+    setSimplifyError(null);
+    const result = await onSimplify();
+    if (result.ok) {
+      setSimplified(result.text);
+    } else {
+      setSimplifyError(result.error);
+    }
+    setSimplifyLoading(false);
   }
 
   return (
@@ -55,14 +75,32 @@ export default function WorkspaceScreen({
       </button>
 
       {showDescription && (
-        <div className="border border-paperLine bg-white/60 px-5 py-4 space-y-2">
-          <h3 className="font-display text-lg">{scenario.title}</h3>
-          <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{scenario.stakes}</p>
-          <p className="text-[15px] text-inkFaint italic border-t border-paperLine pt-3">
-            {scenario.task}
-          </p>
+        <div className="border border-paperLine bg-panel">
+          <div className="win-titlebar">
+            <span className="dot" />
+            <span className="dot" />
+            <span className="dot" />
+            <span className="font-mono text-[11px] text-inkFaint ml-1">
+              {slugify(scenario.title)}.scenario
+            </span>
+          </div>
+          <div className="px-5 py-4 space-y-2">
+            <h3 className="font-display text-lg font-semibold">{scenario.title}</h3>
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{scenario.stakes}</p>
+            <p className="text-[15px] text-inkFaint italic border-t border-paperLine pt-3">
+              {scenario.task}
+            </p>
+          </div>
         </div>
       )}
+
+      {simplified && (
+        <div className="border-l-2 border-stamp pl-3 py-1 text-[14px]">
+          <span className="font-mono text-xs text-stamp block mb-0.5">in plain terms</span>
+          {simplified}
+        </div>
+      )}
+      {simplifyError && <p className="text-xs text-bad">{simplifyError} — try again in a sec.</p>}
 
       {activeTwist && (
         <div className="border-l-2 border-stamp pl-3 py-1 text-[15px]">
@@ -86,7 +124,7 @@ export default function WorkspaceScreen({
           your design — round {round} of {scenario.maxRounds}
         </label>
         <textarea
-          className="w-full h-40 bg-white/60 border border-paperLine focus:border-stamp outline-none px-3 py-2 text-[15px]"
+          className="w-full h-40 bg-panel border border-paperLine focus:border-stamp outline-none px-3 py-2 text-[14px] font-mono"
           placeholder="Describe your approach: what you'd build, key decisions, trade-offs, and how you'd explain it to a teammate who has to pick it up..."
           value={submissionText}
           onChange={(e) => onSubmissionChange(e.target.value)}
@@ -99,6 +137,10 @@ export default function WorkspaceScreen({
             {h}
           </div>
         ))}
+
+        {hintError && (
+          <p className="text-xs text-bad">{hintError} — try again in a sec.</p>
+        )}
 
         <div className="flex gap-3">
           <button
@@ -115,6 +157,13 @@ export default function WorkspaceScreen({
           >
             {hintLoading ? "thinking..." : "get a hint"}
           </button>
+          <button
+            onClick={handleSimplify}
+            disabled={simplifyLoading || submitting}
+            className="border border-paperLine px-4 py-2.5 text-sm hover:border-stamp disabled:opacity-30"
+          >
+            {simplifyLoading ? "thinking..." : "simplify this"}
+          </button>
         </div>
       </div>
     </section>
@@ -123,24 +172,40 @@ export default function WorkspaceScreen({
 
 function FeedbackPanel({ result }: { result: ReviewResult }) {
   return (
-    <div className="border border-paperLine px-5 py-4">
-      <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-xs text-inkFaint">round {result.round} review</span>
+    <div className="border border-paperLine bg-panel">
+      <div className="win-titlebar justify-between">
+        <div className="flex items-center gap-1.5">
+          <span className="dot" />
+          <span className="dot" />
+          <span className="dot" />
+          <span className="font-mono text-[11px] text-inkFaint ml-1">
+            round_{result.round}.review
+          </span>
+        </div>
         <span className={`font-mono text-sm ${result.passed ? "text-good" : "text-ink"}`}>
           {result.score}/100
         </span>
       </div>
-      <ul className="space-y-1.5 mb-3">
-        {result.perCriterion.map((c) => (
-          <li key={c.id} className="text-[15px] flex gap-2">
-            <span className={c.met ? "text-good" : "text-bad"}>{c.met ? "✓" : "✗"}</span>
-            <span>{c.comment}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="text-[15px] text-inkFaint border-t border-paperLine pt-3">
-        {result.overallFeedback}
-      </p>
+      <div className="px-5 py-4">
+        <ul className="space-y-1.5 mb-3">
+          {result.perCriterion.map((c) => (
+            <li key={c.id} className="text-[15px] flex gap-2">
+              <span className={c.met ? "text-good" : "text-bad"}>{c.met ? "✓" : "✗"}</span>
+              <span>{c.comment}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="text-[15px] text-inkFaint border-t border-paperLine pt-3">
+          {result.overallFeedback}
+        </p>
+      </div>
     </div>
   );
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }

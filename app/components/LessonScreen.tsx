@@ -16,14 +16,25 @@ export default function LessonScreen({
 }) {
   const [subjectHint, setSubjectHint] = useState("");
   const [lectureText, setLectureText] = useState("");
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function handleFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = () => setLectureText(String(reader.result || ""));
-    // Demo scope: read as plain text only — a real PDF/PPTX parser is future work
-    // (see design doc, "Lesson selection page").
-    reader.readAsText(file);
+  async function handleFile(file: File) {
+    setParsing(true);
+    setParseError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/parse-file", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to read that file");
+      setLectureText(data.text);
+    } catch (err) {
+      setParseError((err as Error).message);
+    } finally {
+      setParsing(false);
+    }
   }
 
   return (
@@ -43,24 +54,31 @@ export default function LessonScreen({
             <label className="block font-mono text-xs text-inkFaint">course material</label>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="font-mono text-xs text-stamp underline underline-offset-2"
+              disabled={parsing}
+              className="font-mono text-xs text-stamp underline underline-offset-2 disabled:opacity-50"
             >
-              upload a file
+              {parsing ? "reading file..." : "upload slides / PDF"}
             </button>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.md,text/plain"
+              accept=".pdf,.pptx,.txt,.md"
               className="hidden"
-              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+              onChange={(e) => {
+                if (e.target.files?.[0]) handleFile(e.target.files[0]);
+                e.target.value = "";
+              }}
             />
           </div>
           <textarea
-            className="w-full h-44 bg-white/60 border border-paperLine focus:border-stamp outline-none px-3 py-2 text-[15px]"
-            placeholder="Paste a chunk of your lecture slides, syllabus topics, or notes..."
+            className="w-full h-44 bg-panel border border-paperLine focus:border-stamp outline-none px-3 py-2 text-[15px] font-mono text-[13px]"
+            placeholder="Paste a chunk of your lecture slides, syllabus topics, or notes... or upload a .pdf / .pptx above"
             value={lectureText}
             onChange={(e) => setLectureText(e.target.value)}
           />
+          {parseError && (
+            <p className="text-xs text-bad mt-1">{parseError}</p>
+          )}
         </div>
 
         {error && <div className="border-l-2 border-bad pl-3 py-1 text-sm text-bad">{error}</div>}
