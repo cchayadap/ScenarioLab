@@ -8,9 +8,9 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-// gemini-2.5-flash was cut off for new API keys; gemini-3.6-flash is the current
-// equivalent free/standard-tier model. Check ai.google.dev for current model names.
-export const MODEL = "gemini-3.6-flash";
+// gemini-3.5-flash-lite: cheaper/faster than gemini-3.6-flash, chosen for a higher
+// free-tier usage quota. Check ai.google.dev for current model names/pricing.
+export const MODEL = "gemini-3.5-flash-lite";
 
 /**
  * Calls Gemini with a system + user prompt and expects a JSON object back.

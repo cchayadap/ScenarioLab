@@ -7,6 +7,8 @@ export default function WorkspaceScreen({
   scenario,
   round,
   history,
+  hints,
+  simplifiedNotes,
   submissionText,
   onSubmissionChange,
   onSubmit,
@@ -18,6 +20,8 @@ export default function WorkspaceScreen({
   scenario: Scenario;
   round: number;
   history: SubmissionRound[];
+  hints: string[];
+  simplifiedNotes: string[];
   submissionText: string;
   onSubmissionChange: (text: string) => void;
   onSubmit: () => void;
@@ -27,10 +31,8 @@ export default function WorkspaceScreen({
   activeTwist: string | null;
 }) {
   const [showDescription, setShowDescription] = useState(true);
-  const [hints, setHints] = useState<string[]>([]);
   const [hintLoading, setHintLoading] = useState(false);
   const [hintError, setHintError] = useState<string | null>(null);
-  const [simplified, setSimplified] = useState<string | null>(null);
   const [simplifyLoading, setSimplifyLoading] = useState(false);
   const [simplifyError, setSimplifyError] = useState<string | null>(null);
 
@@ -38,11 +40,7 @@ export default function WorkspaceScreen({
     setHintLoading(true);
     setHintError(null);
     const result = await onRequestHint();
-    if (result.ok) {
-      setHints((h) => [...h, result.hint]);
-    } else {
-      setHintError(result.error);
-    }
+    if (!result.ok) setHintError(result.error);
     setHintLoading(false);
   }
 
@@ -50,11 +48,7 @@ export default function WorkspaceScreen({
     setSimplifyLoading(true);
     setSimplifyError(null);
     const result = await onSimplify();
-    if (result.ok) {
-      setSimplified(result.text);
-    } else {
-      setSimplifyError(result.error);
-    }
+    if (!result.ok) setSimplifyError(result.error);
     setSimplifyLoading(false);
   }
 
@@ -94,12 +88,12 @@ export default function WorkspaceScreen({
         </div>
       )}
 
-      {simplified && (
-        <div className="border-l-2 border-stamp pl-3 py-1 text-[14px]">
+      {simplifiedNotes.map((s, i) => (
+        <div key={i} className="border-l-2 border-stamp pl-3 py-1 text-[14px]">
           <span className="font-mono text-xs text-stamp block mb-0.5">in plain terms</span>
-          {simplified}
+          {s}
         </div>
-      )}
+      ))}
       {simplifyError && <p className="text-xs text-bad">{simplifyError} — try again in a sec.</p>}
 
       {activeTwist && (
@@ -142,27 +136,29 @@ export default function WorkspaceScreen({
           <p className="text-xs text-bad">{hintError} — try again in a sec.</p>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex justify-between">
+          <div className="flex gap-3">
+            <button
+              onClick={handleSimplify}
+              disabled={simplifyLoading || submitting}
+              className="border border-paperLine px-4 py-2.5 text-sm hover:border-stamp disabled:opacity-30"
+            >
+              {simplifyLoading ? "thinking..." : "Simplify question"}
+            </button>
+            <button
+              onClick={handleHint}
+              disabled={hintLoading || submitting}
+              className="border border-paperLine px-4 py-2.5 text-sm hover:border-stamp disabled:opacity-30"
+            >
+              {hintLoading ? "thinking..." : "Get a hint"}
+            </button>
+          </div>
           <button
             onClick={onSubmit}
             disabled={submissionText.trim().length < 10 || submitting}
             className="bg-stamp text-paper font-medium px-5 py-2.5 text-sm disabled:opacity-30"
           >
-            {submitting ? "senior is reviewing..." : "submit to senior"}
-          </button>
-          <button
-            onClick={handleHint}
-            disabled={hintLoading || submitting}
-            className="border border-paperLine px-4 py-2.5 text-sm hover:border-stamp disabled:opacity-30"
-          >
-            {hintLoading ? "thinking..." : "get a hint"}
-          </button>
-          <button
-            onClick={handleSimplify}
-            disabled={simplifyLoading || submitting}
-            className="border border-paperLine px-4 py-2.5 text-sm hover:border-stamp disabled:opacity-30"
-          >
-            {simplifyLoading ? "thinking..." : "simplify this"}
+            {submitting ? "senior is reviewing..." : "Submit to senior"}
           </button>
         </div>
       </div>
