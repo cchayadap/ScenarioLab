@@ -12,12 +12,14 @@ import { loadProfile, saveProfile, clearProfile, loadSessions, upsertSession } f
 import WelcomeScreen from "./components/WelcomeScreen";
 import OnboardingScreen from "./components/OnboardingScreen";
 import LessonScreen from "./components/LessonScreen";
-import TaskListScreen from "./components/TaskListScreen";
+import TaskNavigator from "./components/TaskNavigator";
+import SessionNavigator from "./components/SessionNavigator";
 import TaskDetailScreen from "./components/TaskDetailScreen";
 import WorkspaceScreen from "./components/WorkspaceScreen";
 import ResultsScreen from "./components/ResultsScreen";
 import MentorWidget from "./components/MentorWidget";
 import SettingsMenu from "./components/SettingsMenu";
+import { MENTOR_INFO } from "@/lib/mentor";
 
 type Step =
   | "loading"
@@ -52,6 +54,27 @@ export default function Home() {
   }, []);
 
   const activeTask = session?.tasks.find((t) => t.id === activeTaskId) || null;
+  const hasNavigator =
+    !!session &&
+    (["tasks", "opening-task", "task-detail", "workspace", "results"] as Step[]).includes(step);
+
+  // Same explorer panel position whether you're picking a lesson or a task inside one —
+  // browsing "up" a level should never move to a different part of the screen.
+  const sidePanel =
+    hasNavigator && session ? (
+      <TaskNavigator
+        subjectLabel={session.subjectHint || "course material"}
+        tasks={session.tasks}
+        activeTaskId={activeTaskId}
+        onSelectTask={handleOpenTask}
+        onBack={handleNewLesson}
+        pastSessions={pastSessions}
+        currentSessionId={session.id}
+        onSwitchSession={handleResumeSession}
+      />
+    ) : step === "lesson" && pastSessions.length > 0 ? (
+      <SessionNavigator pastSessions={pastSessions} onResume={handleResumeSession} />
+    ) : null;
 
   function persistSession(next: LessonSession) {
     setSession(next);
@@ -282,8 +305,12 @@ export default function Home() {
     setStep("welcome");
   }
 
+  if (step === "welcome") {
+    return <WelcomeScreen onSignIn={handleSignIn} />;
+  }
+
   return (
-    <main className="max-w-2xl mx-auto px-5 py-14">
+    <main className="relative max-w-2xl mx-auto px-5 py-14">
       {profile && (
         <SettingsMenu
           profile={profile}
@@ -294,6 +321,15 @@ export default function Home() {
           onNewLesson={handleNewLesson}
           onForgetMe={handleForgetMe}
         />
+      )}
+
+      {sidePanel && (
+        <>
+          {/* narrow viewports: stacked above the window, in normal flow */}
+          <div className="xl:hidden mb-6">{sidePanel}</div>
+          {/* wide viewports: floats in the left margin so the window never moves or resizes */}
+          <div className="hidden xl:block absolute top-14 right-full mr-6 w-72">{sidePanel}</div>
+        </>
       )}
 
       <div className="border border-paperLine bg-panel shadow-sm">
@@ -309,7 +345,8 @@ export default function Home() {
         <div className="px-6 py-8">
           <header className="mb-8 border-b border-paperLine pb-5">
             <p className="font-mono text-xs text-inkFaint mb-1">intake / new assignment</p>
-            <h1 className="font-display text-2xl font-semibold leading-tight">ScenarioLab</h1>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="ScenarioLab" className="h-20 w-auto" />
           </header>
 
           {error && (
@@ -318,19 +355,12 @@ export default function Home() {
 
           {step === "loading" && <p className="font-mono text-sm text-inkFaint">loading...</p>}
 
-      {step === "welcome" && <WelcomeScreen onSignIn={handleSignIn} />}
-
       {step === "onboarding" && (
         <OnboardingScreen name={pendingName} onComplete={handleOnboardingComplete} />
       )}
 
       {step === "lesson" && (
-        <LessonScreen
-          pastSessions={pastSessions}
-          onStartNew={handleStartLesson}
-          onResume={handleResumeSession}
-          error={error}
-        />
+        <LessonScreen onStartNew={handleStartLesson} error={error} />
       )}
 
       {step === "breaking-down" && (
@@ -338,12 +368,13 @@ export default function Home() {
       )}
 
       {step === "tasks" && session && profile && (
-        <TaskListScreen
-          tasks={session.tasks}
-          mentorStyle={profile.mentorStyle}
-          onOpenTask={handleOpenTask}
-          onBackToLesson={handleNewLesson}
-        />
+        <div className="flex items-start gap-3 border-l-2 border-stamp pl-3 py-1">
+          <span className="text-xl leading-none">{MENTOR_INFO[profile.mentorStyle].emoji}</span>
+          <p className="text-[15px]">
+            <span className="font-medium">{MENTOR_INFO[profile.mentorStyle].name}:</span> here&apos;s
+            the material broken into jobs — pick a folder on the left and I&apos;ll get you set up.
+          </p>
+        </div>
       )}
 
       {step === "opening-task" && (
@@ -378,6 +409,7 @@ export default function Home() {
       {step === "results" && activeTask?.scenario && latestResult && (
         <ResultsScreen
           scenario={activeTask.scenario}
+          submissionText={submissionText}
           result={latestResult}
           gameOver={latestResult.gameOver}
           onContinue={handleContinueFromResults}

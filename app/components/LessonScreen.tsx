@@ -1,17 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { LessonSession } from "@/lib/types";
 
 export default function LessonScreen({
-  pastSessions,
   onStartNew,
-  onResume,
   error,
 }: {
-  pastSessions: LessonSession[];
   onStartNew: (lectureText: string, subjectHint: string) => void;
-  onResume: (session: LessonSession) => void;
   error: string | null;
 }) {
   const [subjectHint, setSubjectHint] = useState("");
@@ -93,34 +88,6 @@ export default function LessonScreen({
           </button>
         </div>
       </div>
-
-      {pastSessions.length > 0 && (
-        <div className="border-t border-paperLine pt-5">
-          <p className="font-mono text-xs text-inkFaint mb-3">continue a former lesson</p>
-          <div className="space-y-2">
-            {pastSessions.map((s) => {
-              const done = s.tasks.filter((t) => t.status === "done").length;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => onResume(s)}
-                  className="w-full text-left border border-paperLine px-4 py-3 hover:border-stamp"
-                >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-[15px]">{s.subjectHint || "course material"}</span>
-                    <span className="font-mono text-xs text-inkFaint whitespace-nowrap">
-                      {done}/{s.tasks.length} done
-                    </span>
-                  </div>
-                  <p className="font-mono text-[11px] text-inkFaint mt-0.5">
-                    {new Date(s.createdAt).toLocaleDateString()}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </section>
   );
 }

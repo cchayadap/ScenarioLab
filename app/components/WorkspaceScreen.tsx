@@ -108,7 +108,7 @@ export default function WorkspaceScreen({
       {history.length > 0 && (
         <div className="space-y-4">
           {history.map((h) => (
-            <FeedbackPanel key={h.round} result={h.result} />
+            <FeedbackPanel key={h.round} submissionText={h.submissionText} result={h.result} />
           ))}
         </div>
       )}
@@ -166,7 +166,15 @@ export default function WorkspaceScreen({
   );
 }
 
-function FeedbackPanel({ result }: { result: ReviewResult }) {
+function FeedbackPanel({
+  submissionText,
+  result,
+}: {
+  submissionText: string;
+  result: ReviewResult;
+}) {
+  const [showSubmission, setShowSubmission] = useState(true);
+
   return (
     <div className="border border-paperLine bg-panel">
       <div className="win-titlebar justify-between">
@@ -182,8 +190,21 @@ function FeedbackPanel({ result }: { result: ReviewResult }) {
           {result.score}/100
         </span>
       </div>
-      <div className="px-5 py-4">
-        <ul className="space-y-1.5 mb-3">
+      <div className="px-5 py-4 space-y-3">
+        <div>
+          <button
+            onClick={() => setShowSubmission((s) => !s)}
+            className="font-mono text-[11px] text-inkFaint underline underline-offset-2"
+          >
+            {showSubmission ? "hide" : "show"} your round {result.round} answer
+          </button>
+          {showSubmission && (
+            <p className="mt-2 text-[14px] font-mono text-inkFaint whitespace-pre-wrap border-l-2 border-paperLine pl-3">
+              {submissionText}
+            </p>
+          )}
+        </div>
+        <ul className="space-y-1.5 border-t border-paperLine pt-3">
           {result.perCriterion.map((c) => (
             <li key={c.id} className="text-[15px] flex gap-2">
               <span className={c.met ? "text-good" : "text-bad"}>{c.met ? "✓" : "✗"}</span>
