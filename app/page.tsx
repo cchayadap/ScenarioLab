@@ -99,6 +99,8 @@ export default function Home() {
           round: 1,
           history: [],
           hintsUsed: 0,
+          hints: [],
+          simplifiedNotes: [],
           status: "not-started" as const,
         })),
       };
@@ -175,7 +177,10 @@ export default function Home() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to get a hint");
-      updateActiveTask({ hintsUsed: activeTask.hintsUsed + 1 });
+      updateActiveTask({
+        hintsUsed: activeTask.hintsUsed + 1,
+        hints: [...(activeTask.hints ?? []), data.hint as string],
+      });
       return { ok: true, hint: data.hint as string };
     } catch (err) {
       return { ok: false, error: (err as Error).message || "Couldn't reach the mentor" };
@@ -200,6 +205,9 @@ export default function Home() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to simplify");
+      updateActiveTask({
+        simplifiedNotes: [...(activeTask.simplifiedNotes ?? []), data.answer as string],
+      });
       return { ok: true, text: data.answer as string };
     } catch (err) {
       return { ok: false, error: (err as Error).message || "Couldn't reach the mentor" };
@@ -355,6 +363,8 @@ export default function Home() {
           scenario={activeTask.scenario}
           round={activeTask.round}
           history={activeTask.history}
+          hints={activeTask.hints ?? []}
+          simplifiedNotes={activeTask.simplifiedNotes ?? []}
           submissionText={submissionText}
           onSubmissionChange={setSubmissionText}
           onSubmit={handleSubmitDesign}

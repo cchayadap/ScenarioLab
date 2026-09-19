@@ -83,13 +83,15 @@ export default function LessonScreen({
 
         {error && <div className="border-l-2 border-bad pl-3 py-1 text-sm text-bad">{error}</div>}
 
-        <button
-          onClick={() => onStartNew(lectureText, subjectHint)}
-          disabled={lectureText.trim().length < 20}
-          className="bg-stamp text-paper font-medium px-5 py-2.5 text-sm disabled:opacity-30"
-        >
-          break this lecture into tasks
-        </button>
+        <div className="flex justify-end">
+          <button
+            onClick={() => onStartNew(lectureText, subjectHint)}
+            disabled={lectureText.trim().length < 20}
+            className="bg-stamp text-paper font-medium px-5 py-2.5 text-sm disabled:opacity-30"
+          >
+            break this lecture into tasks
+          </button>
+        </div>
       </div>
 
       {pastSessions.length > 0 && (

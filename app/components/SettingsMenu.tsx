@@ -26,7 +26,7 @@ export default function SettingsMenu({
         ⚙
       </button>
       {open && (
-        <div className="mt-2 w-64 border border-paperLine bg-panel shadow-lg p-4 space-y-4">
+        <div className="absolute top-full right-0 mt-2 w-64 border border-paperLine bg-panel shadow-lg p-4 space-y-4">
           <div>
             <label className="block font-mono text-xs text-inkFaint mb-1">mentor style</label>
             <div className="flex gap-2">

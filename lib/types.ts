@@ -64,6 +64,8 @@ export interface TaskState {
   round: number;
   history: SubmissionRound[];
   hintsUsed: number;
+  hints: string[]; // accumulated across the whole task, not per round — persists across rounds
+  simplifiedNotes: string[]; // accumulated "simplify this" explanations, same reasoning
   status: "not-started" | "in-progress" | "done";
 }
 
