@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 if (!process.env.ANTHROPIC_API_KEY) {
   // Don't throw at import time in dev — surface a clear error when actually called instead.
   console.warn(
-    "[edtech-sim] ANTHROPIC_API_KEY is not set. API routes will fail until you add it to .env.local"
+    "[ScenarioLab] ANTHROPIC_API_KEY is not set. API routes will fail until you add it to .env.local"
   );
 }
 
