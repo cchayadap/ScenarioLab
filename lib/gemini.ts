@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 if (!process.env.GEMINI_API_KEY) {
   console.warn(
@@ -6,11 +6,11 @@ if (!process.env.GEMINI_API_KEY) {
   );
 }
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-// Free-tier model. Swap to "gemini-2.0-flash" or similar if your key has access
-// and you want a stronger model — check ai.google.dev for current free-tier model names.
-export const MODEL = "gemini-1.5-flash";
+// gemini-2.5-flash was cut off for new API keys; gemini-3.6-flash is the current
+// equivalent free/standard-tier model. Check ai.google.dev for current model names.
+export const MODEL = "gemini-3.6-flash";
 
 /**
  * Calls Gemini with a system + user prompt and expects a JSON object back.
@@ -18,16 +18,16 @@ export const MODEL = "gemini-1.5-flash";
  * defensively strip markdown fences the way a plain text completion would require.
  */
 export async function completeJSON<T>(system: string, userPrompt: string): Promise<T> {
-  const model = genAI.getGenerativeModel({
+  const result = await genAI.models.generateContent({
     model: MODEL,
-    systemInstruction: system,
-    generationConfig: {
+    contents: userPrompt,
+    config: {
+      systemInstruction: system,
       responseMimeType: "application/json",
     },
   });
 
-  const result = await model.generateContent(userPrompt);
-  const text = result.response.text();
+  const text = result.text ?? "";
 
   try {
     return JSON.parse(text) as T;
