@@ -25,6 +25,13 @@ export default function TaskDetailScreen({
         <p className="text-[15px]">{scenario.task}</p>
       </div>
 
+      {scenario.companyAngle && (
+        <div className="border-l-2 border-stamp pl-3 py-1 text-[14px]">
+          <span className="font-mono text-xs text-stamp block mb-0.5">why this matters for you</span>
+          {scenario.companyAngle}
+        </div>
+      )}
+
       <div className="flex gap-3">
         <button
           onClick={onBack}

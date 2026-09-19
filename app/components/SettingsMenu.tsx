@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Profile } from "@/lib/types";
 import { MENTOR_INFO } from "@/lib/mentor";
+import { MasteryStats } from "@/lib/mastery";
 import MentorAvatar from "./MentorAvatar";
 
 export default function SettingsMenu({
@@ -10,25 +11,59 @@ export default function SettingsMenu({
   onChange,
   onNewLesson,
   onForgetMe,
+  mastery,
+  isFront,
+  onFront,
 }: {
   profile: Profile;
   onChange: (profile: Profile) => void;
   onNewLesson: () => void;
   onForgetMe: () => void;
+  mastery: MasteryStats;
+  isFront: boolean;
+  onFront: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="fixed top-5 right-5 z-40">
+    <div className={`fixed top-5 right-5 ${isFront ? "z-50" : "z-40"}`}>
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          onFront();
+          setOpen((o) => !o);
+        }}
         className="w-9 h-9 border border-paperLine bg-panel flex items-center justify-center text-inkFaint hover:text-ink"
         aria-label="Settings"
       >
         ⚙
       </button>
       {open && (
-        <div className="absolute top-full right-0 mt-2 w-64 border border-paperLine bg-panel shadow-lg p-4 space-y-4">
+        <div className="absolute top-full right-0 mt-2 w-72 border border-paperLine bg-panel shadow-lg p-4 space-y-4">
+          {mastery.tasksCompleted > 0 && (
+            <div>
+              <label className="block font-mono text-xs text-inkFaint mb-1">your progress</label>
+              <p className="text-sm">
+                {mastery.tasksCompleted} task{mastery.tasksCompleted === 1 ? "" : "s"} done ·{" "}
+                {mastery.tasksPassed} passed
+              </p>
+              {mastery.weakSpots.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <p className="font-mono text-[11px] text-inkFaint">worth keeping an eye on:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {mastery.weakSpots.map((s) => (
+                      <span
+                        key={s.keyword}
+                        className="font-mono text-[11px] border border-bad text-bad px-1.5 py-0.5"
+                        title={s.sampleComment}
+                      >
+                        {s.keyword} ×{s.timesMissed}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <label className="block font-mono text-xs text-inkFaint mb-1">mentor style</label>
             <div className="flex gap-2">

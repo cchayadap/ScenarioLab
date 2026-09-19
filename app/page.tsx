@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   LessonSession,
   Profile,
@@ -9,6 +9,7 @@ import {
   TaskState,
 } from "@/lib/types";
 import { loadProfile, saveProfile, clearProfile, loadSessions, upsertSession } from "@/lib/storage";
+import { computeMastery, summarizeMasteryForPrompt } from "@/lib/mastery";
 import WelcomeScreen from "./components/WelcomeScreen";
 import OnboardingScreen from "./components/OnboardingScreen";
 import LessonScreen from "./components/LessonScreen";
@@ -55,6 +56,8 @@ export default function Home() {
   }, []);
 
   const activeTask = session?.tasks.find((t) => t.id === activeTaskId) || null;
+  const mastery = useMemo(() => computeMastery(pastSessions), [pastSessions]);
+  const studentHistory = useMemo(() => summarizeMasteryForPrompt(mastery), [mastery]);
   const hasNavigator =
     !!session &&
     (["tasks", "opening-task", "task-detail", "workspace", "results"] as Step[]).includes(step);
@@ -165,6 +168,7 @@ export default function Home() {
           subjectHint: session.subjectHint,
           focusTopic: task.topic,
           focusDescription: task.description,
+          aspiringCompany: profile?.aspiringCompany,
         }),
       });
       const data = await res.json();
@@ -197,6 +201,7 @@ export default function Home() {
           submissionText,
           hintsUsed: activeTask.hintsUsed,
           mentorStyle: profile.mentorStyle,
+          studentHistory,
         }),
       });
       const data = await res.json();
@@ -225,6 +230,7 @@ export default function Home() {
           scenario: activeTask.scenario,
           question: "Can you explain what this task is actually asking me to do, in simpler, plainer terms?",
           mentorStyle: profile.mentorStyle,
+          studentHistory,
         }),
       });
       const data = await res.json();
@@ -252,6 +258,7 @@ export default function Home() {
           round: activeTask.round,
           history: activeTask.history,
           lectureText: session.lectureText,
+          studentHistory,
         }),
       });
       const data = await res.json();
@@ -311,6 +318,10 @@ export default function Home() {
     setStep(profile ? "lesson" : "welcome");
   }
 
+  // Settings and the mentor chat are both fixed-position overlays that can visually collide
+  // in a corner — whichever the student opened most recently should render above the other.
+  const [frontOverlay, setFrontOverlay] = useState<"settings" | "mentor">("mentor");
+
   if (step === "welcome") {
     return <WelcomeScreen onSignIn={handleSignIn} />;
   }
@@ -326,6 +337,9 @@ export default function Home() {
           }}
           onNewLesson={handleNewLesson}
           onForgetMe={handleForgetMe}
+          mastery={mastery}
+          isFront={frontOverlay === "settings"}
+          onFront={() => setFrontOverlay("settings")}
         />
       )}
 
@@ -431,7 +445,13 @@ export default function Home() {
       </div>
 
       {profile && step !== "loading" && step !== "onboarding" && (
-        <MentorWidget scenario={activeTask?.scenario} mentorStyle={profile.mentorStyle} />
+        <MentorWidget
+          scenario={activeTask?.scenario}
+          mentorStyle={profile.mentorStyle}
+          studentHistory={studentHistory}
+          isFront={frontOverlay === "mentor"}
+          onFront={() => setFrontOverlay("mentor")}
+        />
       )}
     </main>
   );

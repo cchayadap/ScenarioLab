@@ -10,6 +10,12 @@ to that task, redirect back to it instead. If no scenario is given, the student 
 yet — answer general questions about the course material, how the sim works, or how to get started,
 but still redirect anything that isn't about that (e.g. small talk, unrelated topics).
 
+If a student history block is given below, you've mentored this student before — you actually
+remember their past work, the way a real mentor who reviewed their last few submissions would.
+Weave that in naturally when it's relevant (e.g. a quick "you had trouble with this exact thing
+last time" or acknowledging real progress) — don't force it into every answer, and never just list
+their stats back at them.
+
 Mentor style:
 - "serious": brief, a little terse, points them at what to look up rather than answering outright.
 - "easy": warmer, explains concepts directly and concretely.
@@ -29,10 +35,12 @@ export async function POST(req: NextRequest) {
       scenario,
       question,
       mentorStyle,
+      studentHistory,
     }: {
       scenario: Scenario | null;
       question: string;
       mentorStyle: MentorStyle;
+      studentHistory?: string | null;
     } = await req.json();
 
     if (!question || typeof question !== "string") {
@@ -46,11 +54,12 @@ Stakes: ${scenario.stakes}
 Task: ${scenario.task}
 
 Rubric:
-${scenario.rubric.map((r) => `- [${r.id}] ${r.label}`).join("\n")}`
+${scenario.rubric.map((r) => `- [${r.id}] ${r.label}`).join("\n")}
+${scenario.companyAngle ? `Company angle: ${scenario.companyAngle}` : ""}`
       : `No task is open right now — the student is browsing tasks or setting up a lesson.`;
 
     const userPrompt = `${scenarioBlock}
-
+${studentHistory ? `\nStudent history: ${studentHistory}\n` : ""}
 Mentor style: ${mentorStyle === "easy" ? "easy (explain directly)" : "serious (point, don't hand over)"}
 
 Student's question:

@@ -20,9 +20,15 @@ const SURPRISED_HOLD_MS = 6000;
 export default function MentorWidget({
   scenario,
   mentorStyle,
+  studentHistory,
+  isFront,
+  onFront,
 }: {
   scenario?: Scenario | null;
   mentorStyle: MentorStyle;
+  studentHistory?: string | null;
+  isFront: boolean;
+  onFront: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
@@ -55,7 +61,12 @@ export default function MentorWidget({
       const res = await fetch("/api/ask-mentor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenario: scenario ?? null, question: q, mentorStyle }),
+        body: JSON.stringify({
+          scenario: scenario ?? null,
+          question: q,
+          mentorStyle,
+          studentHistory: studentHistory ?? null,
+        }),
       });
       const data = await res.json();
       const answer = res.ok ? data.answer : "Couldn't reach the mentor — try again in a sec.";
@@ -74,7 +85,7 @@ export default function MentorWidget({
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
+    <div className={`fixed bottom-5 right-5 flex flex-col items-end gap-2 ${isFront ? "z-50" : "z-40"}`}>
       {open && (
         <div className="w-80 max-h-96 flex flex-col border border-paperLine bg-panel shadow-lg">
           <div className="win-titlebar justify-between">
@@ -128,7 +139,10 @@ export default function MentorWidget({
         </div>
       )}
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          onFront();
+          setOpen((o) => !o);
+        }}
         className="transition-transform hover:scale-105"
         aria-label="Ask your mentor"
       >
