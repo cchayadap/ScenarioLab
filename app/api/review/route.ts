@@ -16,7 +16,15 @@ Rules:
   change (e.g. new constraint, scale change, a stakeholder objection) to make the next round harder
   and more realistic — but only include a twist sometimes, not every round, and never on the final round.
 - Keep overallFeedback to 2-4 sentences, in-character as a senior, not a grading rubric read-out.
+- If a student history block is given, you've reviewed this student's work before — a real senior who
+  remembers past reviews would occasionally call out a genuine pattern (e.g. "you nailed the thing that
+  tripped you up last time" or "this is the same gap as your last review — let's actually fix it now").
+  Only do this when a past weak spot is actually relevant to this submission; never force it in, and
+  never just recite their stats.
 - score is 0-100, roughly proportional to criteria met, but you can adjust slightly for quality of reasoning.
+- If the scenario includes a company angle, you may occasionally tie overallFeedback to it (e.g. how
+  this specific submission would land in that kind of review) when it's genuinely relevant — don't
+  force it into every round.
 - If source material was provided, include a short "anecdote": one sentence pulling a specific, concrete
   detail from that material (not generic advice) that would help the student improve the weakest criterion.
   Omit it (null) if no source material was given or nothing specific enough applies.
@@ -59,12 +67,14 @@ export async function POST(req: NextRequest) {
       round,
       history,
       lectureText,
+      studentHistory,
     }: {
       scenario: Scenario;
       submissionText: string;
       round: number;
       history: SubmissionRound[];
       lectureText?: string;
+      studentHistory?: string | null;
     } = body;
 
     if (!scenario || !submissionText || typeof submissionText !== "string") {
@@ -90,11 +100,11 @@ Task: ${scenario.task}
 
 Rubric:
 ${scenario.rubric.map((r) => `- [${r.id}] ${r.label} (from: ${r.sourceRef || "material"})`).join("\n")}
-
+${scenario.companyAngle ? `Company angle: ${scenario.companyAngle}\n` : ""}
 Max rounds: ${scenario.maxRounds}
 Current round: ${round}
 Is this the final round: ${isFinalRound}
-
+${studentHistory ? `\nStudent history: ${studentHistory}\n` : ""}
 ${historyBlock ? `Prior rounds:\n${historyBlock}\n` : ""}
 ${lectureText ? `\nSource material this task was derived from:\n"""\n${lectureText.slice(0, 4000)}\n"""\n` : ""}
 Student's current submission (round ${round}):

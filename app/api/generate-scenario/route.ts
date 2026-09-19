@@ -13,6 +13,20 @@ You also produce a rubric: 3 to 5 specific, checkable criteria that a good desig
 satisfy, each one clearly derived from a concept in the provided material. Do not invent criteria
 unrelated to the material given.
 
+If the student's target company/industry is given below, calibrate the scenario to actually feel
+like that environment instead of a generic one:
+- Big tech / large company: scale, reliability, and process show up in the stakes (e.g. rollout
+  risk, backward compatibility, review process) — the kind of thing a staff engineer would flag.
+- Startup: resource constraints, ambiguity, and speed matter more than polish — a scrappy, "we
+  need this by Friday" framing.
+- Research lab / academia: correctness and rigor matter most — precise reasoning over shipping fast.
+- Anything else the student wrote: use your judgment on what that environment would realistically
+  care about.
+If no target is given, use a neutral, generic tech-company framing.
+Also write "companyAngle": one honest sentence connecting THIS specific task to what that kind of
+company's interviews or day-to-day work actually look for — concrete, not generic motivational
+fluff (e.g. not "this will help your career"). Omit it (null) if no target company was given.
+
 Respond with ONLY a raw JSON object, no markdown fences, no commentary, matching exactly this shape:
 {
   "role": string,          // realistic intern job title relevant to the material
@@ -20,7 +34,8 @@ Respond with ONLY a raw JSON object, no markdown fences, no commentary, matching
   "stakes": string,        // 2-4 sentences: the situation, written like a Slack message or ticket from a manager, informal and slightly ambiguous like a real workplace ask
   "task": string,          // 1-2 sentences: exactly what the student must produce (a design, a schema, a plan, a set of trade-offs) — explicit that no code is required
   "rubric": [ { "id": string, "label": string, "sourceRef": string } ],  // 3-5 items
-  "maxRounds": 3
+  "maxRounds": 3,
+  "companyAngle": string | null
 }`;
 
 export async function POST(req: NextRequest) {
@@ -30,11 +45,13 @@ export async function POST(req: NextRequest) {
       subjectHint,
       focusTopic,
       focusDescription,
+      aspiringCompany,
     }: {
       syllabusText: string;
       subjectHint?: string;
       focusTopic?: string;
       focusDescription?: string;
+      aspiringCompany?: string;
     } = await req.json();
 
     if (!syllabusText || typeof syllabusText !== "string" || syllabusText.trim().length < 20) {
@@ -57,12 +74,17 @@ ${
       }\nScope the scenario to THIS task only, not the whole material above (the material is context, not the whole scope).\n`
     : ""
 }
+${aspiringCompany?.trim() ? `\nStudent's target company/environment: ${aspiringCompany.trim()}\n` : ""}
 Generate the scenario JSON now.`;
 
-    const scenario = await completeJSON<Scenario>(SYSTEM_PROMPT, userPrompt);
+    const raw = await completeJSON<Scenario & { companyAngle?: string | null }>(
+      SYSTEM_PROMPT,
+      userPrompt
+    );
 
     // Defensive defaults in case the model omits something.
-    scenario.maxRounds = scenario.maxRounds && scenario.maxRounds > 0 ? scenario.maxRounds : 3;
+    raw.maxRounds = raw.maxRounds && raw.maxRounds > 0 ? raw.maxRounds : 3;
+    const scenario: Scenario = { ...raw, companyAngle: raw.companyAngle || undefined };
 
     return NextResponse.json({ scenario });
   } catch (err) {

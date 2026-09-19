@@ -13,6 +13,7 @@ export interface Scenario {
   task: string; // what the student must design/plan
   rubric: RubricCriterion[]; // 3-5 checkable criteria derived from the syllabus material
   maxRounds: number; // hard cap on feedback loop rounds (default 3)
+  companyAngle?: string; // 1 sentence tying this task to what the student's target company actually cares about
 }
 
 export interface CriterionResult {

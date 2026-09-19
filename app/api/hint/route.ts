@@ -14,6 +14,10 @@ Mentor style controls how direct you are:
 Base the hint on what the student has actually written so far (praise nothing, just orient them) — if
 they've written nothing yet, hint at where to start instead.
 
+If a student history block is given, you've mentored this student on past tasks — if one of their
+recurring weak spots is relevant to this task, a real mentor would nudge at that connection instead of
+treating it as a fresh mistake. Don't force it if it doesn't genuinely apply here.
+
 Respond with ONLY a raw JSON object, no markdown fences, no commentary, matching exactly:
 { "hint": string }`;
 
@@ -24,11 +28,13 @@ export async function POST(req: NextRequest) {
       submissionText,
       hintsUsed,
       mentorStyle,
+      studentHistory,
     }: {
       scenario: Scenario;
       submissionText: string;
       hintsUsed: number;
       mentorStyle: MentorStyle;
+      studentHistory?: string | null;
     } = await req.json();
 
     if (!scenario) {
@@ -41,7 +47,8 @@ Task: ${scenario.task}
 
 Rubric:
 ${scenario.rubric.map((r) => `- [${r.id}] ${r.label}`).join("\n")}
-
+${scenario.companyAngle ? `Company angle: ${scenario.companyAngle}\n` : ""}
+${studentHistory ? `\nStudent history: ${studentHistory}\n` : ""}
 Mentor style: ${mentorStyle === "easy" ? "easy (explain directly)" : "serious (point, don't hand over)"}
 Hints already given this round: ${hintsUsed || 0}
 
