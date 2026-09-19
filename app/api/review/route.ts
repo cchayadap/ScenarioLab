@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { completeJSON } from "@/lib/gemini";
-import { Scenario, ReviewResult, SubmissionRound } from "@/lib/types";
+import { AnswerDiagram, Scenario, ReviewResult, SubmissionRound } from "@/lib/types";
+
+function describeAnswerDiagram(diagram: AnswerDiagram): string {
+  const labelById = new Map(diagram.nodes.map((n) => [n.id, n.label || n.kind]));
+  const nodeLines = diagram.nodes.map((n) => `[${n.kind}] ${n.label || "(untitled)"}`).join("; ");
+  const edgeLines = diagram.edges
+    .map((e) => {
+      const from = labelById.get(e.source) || e.source;
+      const to = labelById.get(e.target) || e.target;
+      return e.label ? `${from} -> (${e.label}) ${to}` : `${from} -> ${to}`;
+    })
+    .join("; ");
+  return `Nodes: ${nodeLines || "(none)"}\nConnections: ${edgeLines || "(none drawn)"}`;
+}
 
 const SYSTEM_PROMPT = `You are "the senior" — an experienced, busy, slightly informal engineer/professional
 mentoring an intern in a simulated workplace. You review the intern's DESIGN submission (not code)
@@ -10,6 +23,10 @@ specific, references what they actually wrote, not generic platitudes.
 Rules:
 - Judge each rubric criterion strictly against what the student actually wrote. If they didn't
   address it, mark it unmet — do not give credit for implied or assumed reasoning.
+- If the student attached a flowchart, treat it as part of their submission, not decoration —
+  a criterion about describing a procedure/flow/decision logic can be satisfied by the diagram
+  even if the prose is thin, and vice versa. Reference specific nodes or branches from it in your
+  feedback when relevant, the way a real reviewer would point at a diagram in a design doc.
 - "passed" = true only if at least 80% of rubric criteria are met, OR this is the final round
   (round === maxRounds) and at least 50% are met (partial credit close-out).
 - If not passed and rounds remain, you MAY add a "twist": a realistic complication or requirement
@@ -64,6 +81,7 @@ export async function POST(req: NextRequest) {
     const {
       scenario,
       submissionText,
+      diagram,
       round,
       history,
       lectureText,
@@ -71,6 +89,7 @@ export async function POST(req: NextRequest) {
     }: {
       scenario: Scenario;
       submissionText: string;
+      diagram?: AnswerDiagram | null;
       round: number;
       history: SubmissionRound[];
       lectureText?: string;
@@ -111,7 +130,11 @@ Student's current submission (round ${round}):
 """
 ${submissionText.slice(0, 6000)}
 """
-
+${
+  diagram && diagram.nodes.length > 0
+    ? `\nStudent also attached this flowchart alongside their written answer:\n${describeAnswerDiagram(diagram)}\n`
+    : ""
+}
 Review it now and respond with the JSON object.`;
 
     const raw = await completeJSON<Omit<ReviewResult, "round" | "gameOver">>(

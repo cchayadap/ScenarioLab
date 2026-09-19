@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  AnswerDiagram,
   LessonSession,
   Profile,
   ReviewResult,
@@ -43,6 +44,7 @@ export default function Home() {
   const [session, setSession] = useState<LessonSession | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [submissionText, setSubmissionText] = useState("");
+  const [diagramData, setDiagramData] = useState<AnswerDiagram | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeTwist, setActiveTwist] = useState<string | null>(null);
   const [latestResult, setLatestResult] = useState<ReviewResult | null>(null);
@@ -151,6 +153,7 @@ export default function Home() {
     setActiveTaskId(taskId);
     setActiveTwist(null);
     setSubmissionText("");
+    setDiagramData(null);
 
     if (task.scenario) {
       setStep("task-detail");
@@ -255,6 +258,7 @@ export default function Home() {
         body: JSON.stringify({
           scenario: activeTask.scenario,
           submissionText,
+          diagram: diagramData && diagramData.nodes.length > 0 ? diagramData : null,
           round: activeTask.round,
           history: activeTask.history,
           lectureText: session.lectureText,
@@ -269,7 +273,15 @@ export default function Home() {
         t.id === activeTask.id
           ? {
               ...t,
-              history: [...t.history, { round: t.round, submissionText, result }],
+              history: [
+                ...t.history,
+                {
+                  round: t.round,
+                  submissionText,
+                  diagram: diagramData && diagramData.nodes.length > 0 ? diagramData : undefined,
+                  result,
+                },
+              ],
               round: result.gameOver ? t.round : t.round + 1,
               status: result.gameOver ? ("done" as const) : ("in-progress" as const),
             }
@@ -293,6 +305,7 @@ export default function Home() {
     } else {
       setActiveTwist(latestResult.twist || null);
       setSubmissionText("");
+      setDiagramData(null);
       setStep("workspace");
     }
     setLatestResult(null);
@@ -423,6 +436,7 @@ export default function Home() {
           simplifiedNotes={activeTask.simplifiedNotes ?? []}
           submissionText={submissionText}
           onSubmissionChange={setSubmissionText}
+          onDiagramChange={setDiagramData}
           onSubmit={handleSubmitDesign}
           onRequestHint={handleRequestHint}
           onSimplify={handleSimplify}
@@ -435,6 +449,7 @@ export default function Home() {
         <ResultsScreen
           scenario={activeTask.scenario}
           submissionText={submissionText}
+          diagram={diagramData}
           result={latestResult}
           gameOver={latestResult.gameOver}
           onContinue={handleContinueFromResults}

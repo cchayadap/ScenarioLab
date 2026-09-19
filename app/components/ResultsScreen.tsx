@@ -1,18 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { ReviewResult, Scenario } from "@/lib/types";
+import { AnswerDiagram, ReviewResult, Scenario } from "@/lib/types";
 import MermaidDiagram from "./MermaidDiagram";
+import DiagramEditor from "./DiagramEditor";
 
 export default function ResultsScreen({
   scenario,
   submissionText,
+  diagram,
   result,
   gameOver,
   onContinue,
 }: {
   scenario: Scenario;
   submissionText: string;
+  diagram?: AnswerDiagram | null;
   result: ReviewResult;
   gameOver: boolean;
   onContinue: () => void;
@@ -52,6 +55,11 @@ export default function ResultsScreen({
             <p className="mt-2 text-[14px] font-mono text-inkFaint whitespace-pre-wrap border-l-2 border-paperLine pl-3">
               {submissionText}
             </p>
+          )}
+          {showSubmission && diagram && diagram.nodes.length > 0 && (
+            <div className="mt-2">
+              <DiagramEditor initialDiagram={diagram} readOnly />
+            </div>
           )}
         </div>
 
