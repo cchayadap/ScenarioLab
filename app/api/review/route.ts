@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { completeJSON } from "@/lib/anthropic";
+import { completeJSON } from "@/lib/gemini";
 import { Scenario, ReviewResult, SubmissionRound } from "@/lib/types";
 
 const SYSTEM_PROMPT = `You are "the senior" — an experienced, busy, slightly informal engineer/professional

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { completeJSON } from "@/lib/anthropic";
+import { completeJSON } from "@/lib/gemini";
 import { Scenario } from "@/lib/types";
 
 const SYSTEM_PROMPT = `You design realistic internship-style scenarios for a STEM education app.

@@ -9,15 +9,20 @@ loop until it passes or you hit the round cap.
 
 ```bash
 npm install
-cp .env.example .env.local   # then add your ANTHROPIC_API_KEY
+cp .env.example .env.local   # then add your GEMINI_API_KEY
 npm run dev
 ```
 
 Open http://localhost:3000
 
-You need an Anthropic API key (console.anthropic.com) with access to a Claude
-model. The model string is set in `lib/anthropic.ts` — change `MODEL` if your
-key doesn't have access to `claude-sonnet-4-5`.
+You need a Google Gemini API key (aistudio.google.com/apikey — free tier, no
+credit card required to start). The model is set in `lib/gemini.ts` — the
+default is `gemini-1.5-flash`; swap to `gemini-2.0-flash` or similar if your
+key has access and you want a stronger model.
+
+Gemini's `responseMimeType: "application/json"` mode is used so the model
+returns clean JSON directly, without needing to strip markdown fences the way
+a plain-text completion would.
 
 ## Architecture
 
@@ -27,7 +32,7 @@ app/
   api/generate-scenario/route.ts  <- syllabus text -> {role, stakes, task, rubric}
   api/review/route.ts             <- submission + rubric + history -> per-criterion verdict + score + twist
 lib/
-  anthropic.ts                 <- Claude API wrapper, JSON-only completion helper
+  gemini.ts                    <- Gemini API wrapper, JSON-mode completion helper
   types.ts                     <- shared Scenario / ReviewResult / SubmissionRound types
 ```
 
