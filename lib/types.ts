@@ -29,10 +29,48 @@ export interface ReviewResult {
   passed: boolean; // true if enough criteria met (or max rounds reached with partial credit)
   twist?: string; // optional escalation/curveball injected for the next round
   gameOver: boolean; // true if passed OR round === maxRounds
+  anecdote?: string; // short related note pulled from the source material to help them improve
 }
 
 export interface SubmissionRound {
   round: number;
   submissionText: string;
   result: ReviewResult;
+}
+
+// --- Redesign additions: onboarding, lecture breakdown, tasks, mentor ---
+
+export type MentorStyle = "easy" | "serious";
+
+export interface Profile {
+  name: string;
+  mentorStyle: MentorStyle;
+  aspiringCompany: string; // free text, e.g. "big tech", "a research lab"
+}
+
+export interface TaskSummary {
+  id: string; // stable slug, e.g. "normalization"
+  topic: string; // short topic name shown on the folder icon
+  description: string; // one-line description of what the task covers
+  sourceRef?: string; // which part of the lecture this was derived from
+}
+
+export interface TaskState {
+  id: string;
+  topic: string;
+  description: string;
+  sourceRef?: string;
+  scenario?: Scenario; // generated lazily the first time the task is opened
+  round: number;
+  history: SubmissionRound[];
+  hintsUsed: number;
+  status: "not-started" | "in-progress" | "done";
+}
+
+export interface LessonSession {
+  id: string;
+  createdAt: string; // ISO timestamp
+  subjectHint?: string;
+  lectureText: string;
+  tasks: TaskState[];
 }

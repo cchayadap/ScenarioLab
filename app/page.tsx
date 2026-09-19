@@ -1,248 +1,342 @@
 "use client";
 
-import { useState } from "react";
-import { Scenario, ReviewResult, SubmissionRound } from "@/lib/types";
+import { useEffect, useState } from "react";
+import {
+  LessonSession,
+  Profile,
+  ReviewResult,
+  Scenario,
+  TaskState,
+} from "@/lib/types";
+import { loadProfile, saveProfile, clearProfile, loadSessions, upsertSession } from "@/lib/storage";
+import WelcomeScreen from "./components/WelcomeScreen";
+import OnboardingScreen from "./components/OnboardingScreen";
+import LessonScreen from "./components/LessonScreen";
+import TaskListScreen from "./components/TaskListScreen";
+import TaskDetailScreen from "./components/TaskDetailScreen";
+import WorkspaceScreen from "./components/WorkspaceScreen";
+import ResultsScreen from "./components/ResultsScreen";
+import MentorWidget from "./components/MentorWidget";
+import SettingsMenu from "./components/SettingsMenu";
 
-type Step = "setup" | "generating" | "playing" | "reviewing" | "done";
+type Step =
+  | "loading"
+  | "welcome"
+  | "onboarding"
+  | "lesson"
+  | "breaking-down"
+  | "tasks"
+  | "opening-task"
+  | "task-detail"
+  | "workspace"
+  | "results";
 
 export default function Home() {
-  const [step, setStep] = useState<Step>("setup");
-  const [syllabusText, setSyllabusText] = useState("");
-  const [subjectHint, setSubjectHint] = useState("");
+  const [step, setStep] = useState<Step>("loading");
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [pendingName, setPendingName] = useState("");
+  const [pastSessions, setPastSessions] = useState<LessonSession[]>([]);
+  const [session, setSession] = useState<LessonSession | null>(null);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [submissionText, setSubmissionText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [activeTwist, setActiveTwist] = useState<string | null>(null);
+  const [latestResult, setLatestResult] = useState<ReviewResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [scenario, setScenario] = useState<Scenario | null>(null);
-  const [round, setRound] = useState(1);
-  const [history, setHistory] = useState<SubmissionRound[]>([]);
-  const [submissionText, setSubmissionText] = useState("");
-  const [latestResult, setLatestResult] = useState<ReviewResult | null>(null);
-  const [activeTwist, setActiveTwist] = useState<string | null>(null);
+  useEffect(() => {
+    const p = loadProfile();
+    setProfile(p);
+    setPastSessions(loadSessions());
+    setStep(p ? "lesson" : "welcome");
+  }, []);
 
-  async function handleGenerate() {
+  const activeTask = session?.tasks.find((t) => t.id === activeTaskId) || null;
+
+  function persistSession(next: LessonSession) {
+    setSession(next);
+    upsertSession(next);
+    setPastSessions(loadSessions());
+  }
+
+  function updateActiveTask(patch: Partial<TaskState>) {
+    if (!session || !activeTask) return;
+    const nextTasks = session.tasks.map((t) => (t.id === activeTask.id ? { ...t, ...patch } : t));
+    persistSession({ ...session, tasks: nextTasks });
+  }
+
+  function handleSignIn(name: string) {
+    setPendingName(name);
+    setStep("onboarding");
+  }
+
+  function handleOnboardingComplete(mentorStyle: Profile["mentorStyle"], aspiringCompany: string) {
+    const newProfile: Profile = { name: pendingName, mentorStyle, aspiringCompany };
+    saveProfile(newProfile);
+    setProfile(newProfile);
+    setStep("lesson");
+  }
+
+  async function handleStartLesson(lectureText: string, subjectHint: string) {
     setError(null);
-    setStep("generating");
+    setStep("breaking-down");
+    try {
+      const res = await fetch("/api/breakdown-lecture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lectureText, subjectHint }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to break down lecture");
+
+      const newSession: LessonSession = {
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+        subjectHint,
+        lectureText,
+        tasks: data.tasks.map((t: { id: string; topic: string; description: string; sourceRef?: string }) => ({
+          ...t,
+          round: 1,
+          history: [],
+          hintsUsed: 0,
+          status: "not-started" as const,
+        })),
+      };
+      persistSession(newSession);
+      setStep("tasks");
+    } catch (err) {
+      setError((err as Error).message);
+      setStep("lesson");
+    }
+  }
+
+  function handleResumeSession(s: LessonSession) {
+    setSession(s);
+    setStep("tasks");
+  }
+
+  async function handleOpenTask(taskId: string) {
+    if (!session) return;
+    const task = session.tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    setActiveTaskId(taskId);
+    setActiveTwist(null);
+    setSubmissionText("");
+
+    if (task.scenario) {
+      setStep("task-detail");
+      return;
+    }
+
+    setError(null);
+    setStep("opening-task");
     try {
       const res = await fetch("/api/generate-scenario", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ syllabusText, subjectHint }),
+        body: JSON.stringify({
+          syllabusText: session.lectureText,
+          subjectHint: session.subjectHint,
+          focusTopic: task.topic,
+          focusDescription: task.description,
+        }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to generate scenario");
-      setScenario(data.scenario);
-      setRound(1);
-      setHistory([]);
-      setLatestResult(null);
-      setActiveTwist(null);
-      setSubmissionText("");
-      setStep("playing");
+      if (!res.ok) throw new Error(data.error || "Failed to set up task");
+
+      const scenario: Scenario = data.scenario;
+      const nextTasks = session.tasks.map((t) =>
+        t.id === taskId ? { ...t, scenario, status: "in-progress" as const } : t
+      );
+      persistSession({ ...session, tasks: nextTasks });
+      setStep("task-detail");
     } catch (err) {
       setError((err as Error).message);
-      setStep("setup");
+      setStep("tasks");
+    }
+  }
+
+  async function handleRequestHint(): Promise<string> {
+    if (!activeTask?.scenario || !profile) return "Couldn't get a hint right now.";
+    try {
+      const res = await fetch("/api/hint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scenario: activeTask.scenario,
+          submissionText,
+          hintsUsed: activeTask.hintsUsed,
+          mentorStyle: profile.mentorStyle,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      updateActiveTask({ hintsUsed: activeTask.hintsUsed + 1 });
+      return data.hint as string;
+    } catch {
+      return "Couldn't reach the mentor for a hint — try again in a sec.";
     }
   }
 
   async function handleSubmitDesign() {
-    if (!scenario || submissionText.trim().length < 10) return;
+    if (!session || !activeTask?.scenario || submissionText.trim().length < 10) return;
     setError(null);
-    setStep("reviewing");
+    setSubmitting(true);
     try {
       const res = await fetch("/api/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenario, submissionText, round, history }),
+        body: JSON.stringify({
+          scenario: activeTask.scenario,
+          submissionText,
+          round: activeTask.round,
+          history: activeTask.history,
+          lectureText: session.lectureText,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to review submission");
 
       const result: ReviewResult = data.result;
+      const nextTasks = session.tasks.map((t) =>
+        t.id === activeTask.id
+          ? {
+              ...t,
+              history: [...t.history, { round: t.round, submissionText, result }],
+              round: result.gameOver ? t.round : t.round + 1,
+              status: result.gameOver ? ("done" as const) : ("in-progress" as const),
+            }
+          : t
+      );
+      persistSession({ ...session, tasks: nextTasks });
       setLatestResult(result);
-      setHistory((h) => [...h, { round, submissionText, result }]);
-
-      if (result.gameOver) {
-        setStep("done");
-      } else {
-        setActiveTwist(result.twist || null);
-        setRound((r) => r + 1);
-        setSubmissionText("");
-        setStep("playing");
-      }
+      setStep("results");
     } catch (err) {
       setError((err as Error).message);
-      setStep("playing");
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  function handleRestart() {
-    setStep("setup");
-    setScenario(null);
-    setSyllabusText("");
-    setSubjectHint("");
-    setRound(1);
-    setHistory([]);
-    setSubmissionText("");
+  function handleContinueFromResults() {
+    if (!latestResult) return;
+    if (latestResult.gameOver) {
+      setActiveTaskId(null);
+      setStep("tasks");
+    } else {
+      setActiveTwist(latestResult.twist || null);
+      setSubmissionText("");
+      setStep("workspace");
+    }
     setLatestResult(null);
-    setActiveTwist(null);
+  }
+
+  function handleNewLesson() {
+    setSession(null);
+    setActiveTaskId(null);
     setError(null);
+    setStep("lesson");
+  }
+
+  function handleForgetMe() {
+    clearProfile();
+    setProfile(null);
+    setSession(null);
+    setActiveTaskId(null);
+    setStep("welcome");
   }
 
   return (
     <main className="max-w-2xl mx-auto px-5 py-14">
+      {profile && (
+        <SettingsMenu
+          profile={profile}
+          onChange={(p) => {
+            saveProfile(p);
+            setProfile(p);
+          }}
+          onNewLesson={handleNewLesson}
+          onForgetMe={handleForgetMe}
+        />
+      )}
+
       <header className="mb-10 border-b border-paperLine pb-6">
         <p className="font-mono text-xs text-inkFaint mb-1">intake / new assignment</p>
         <h1 className="font-display text-[28px] leading-tight">ScenarioLab</h1>
-        <p className="text-inkFaint mt-2 text-[15px] max-w-md">
-          Hand over your course material. You&apos;ll be assigned an intern role and a real
-          problem to plan — no code, just a design your senior will actually push back on.
-        </p>
       </header>
 
       {error && (
         <div className="mb-6 border-l-2 border-bad pl-3 py-1 text-sm text-bad">{error}</div>
       )}
 
-      {step === "setup" && (
-        <section className="space-y-5">
-          <div>
-            <label className="block font-mono text-xs text-inkFaint mb-1">
-              subject (optional)
-            </label>
-            <input
-              className="w-full bg-transparent border-b border-paperLine focus:border-stamp outline-none px-1 py-2 text-[15px]"
-              placeholder="Database Systems"
-              value={subjectHint}
-              onChange={(e) => setSubjectHint(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block font-mono text-xs text-inkFaint mb-1">course material</label>
-            <textarea
-              className="w-full h-44 bg-white/60 border border-paperLine focus:border-stamp outline-none px-3 py-2 text-[15px]"
-              placeholder="Paste a chunk of your lecture slides, syllabus topics, or notes..."
-              value={syllabusText}
-              onChange={(e) => setSyllabusText(e.target.value)}
-            />
-          </div>
-          <button
-            onClick={handleGenerate}
-            disabled={syllabusText.trim().length < 20}
-            className="bg-stamp text-paper font-medium px-5 py-2.5 text-sm disabled:opacity-30"
-          >
-            Assign me a scenario
-          </button>
-        </section>
+      {step === "loading" && <p className="font-mono text-sm text-inkFaint">loading...</p>}
+
+      {step === "welcome" && <WelcomeScreen onSignIn={handleSignIn} />}
+
+      {step === "onboarding" && (
+        <OnboardingScreen name={pendingName} onComplete={handleOnboardingComplete} />
       )}
 
-      {step === "generating" && (
+      {step === "lesson" && (
+        <LessonScreen
+          pastSessions={pastSessions}
+          onStartNew={handleStartLesson}
+          onResume={handleResumeSession}
+          error={error}
+        />
+      )}
+
+      {step === "breaking-down" && (
+        <p className="font-mono text-sm text-inkFaint">breaking your lecture into tasks...</p>
+      )}
+
+      {step === "tasks" && session && profile && (
+        <TaskListScreen
+          tasks={session.tasks}
+          mentorStyle={profile.mentorStyle}
+          onOpenTask={handleOpenTask}
+          onBackToLesson={handleNewLesson}
+        />
+      )}
+
+      {step === "opening-task" && (
         <p className="font-mono text-sm text-inkFaint">setting up your first day...</p>
       )}
 
-      {scenario && (step === "playing" || step === "reviewing" || step === "done") && (
-        <section className="space-y-6">
-          <ScenarioCard scenario={scenario} round={round} />
+      {step === "task-detail" && activeTask?.scenario && (
+        <TaskDetailScreen
+          scenario={activeTask.scenario}
+          onNext={() => setStep("workspace")}
+          onBack={() => setStep("tasks")}
+        />
+      )}
 
-          {activeTwist && step === "playing" && (
-            <div className="border-l-2 border-stamp pl-3 py-1 text-[15px]">
-              <span className="font-mono text-xs text-stamp block mb-0.5">
-                message from your senior
-              </span>
-              {activeTwist}
-            </div>
-          )}
+      {step === "workspace" && activeTask?.scenario && (
+        <WorkspaceScreen
+          scenario={activeTask.scenario}
+          round={activeTask.round}
+          history={activeTask.history}
+          submissionText={submissionText}
+          onSubmissionChange={setSubmissionText}
+          onSubmit={handleSubmitDesign}
+          onRequestHint={handleRequestHint}
+          submitting={submitting}
+          activeTwist={activeTwist}
+        />
+      )}
 
-          {history.length > 0 && (
-            <div className="space-y-4">
-              {history.map((h) => (
-                <FeedbackPanel key={h.round} result={h.result} />
-              ))}
-            </div>
-          )}
+      {step === "results" && activeTask?.scenario && latestResult && (
+        <ResultsScreen
+          scenario={activeTask.scenario}
+          result={latestResult}
+          gameOver={latestResult.gameOver}
+          onContinue={handleContinueFromResults}
+        />
+      )}
 
-          {step !== "done" && (
-            <div className="space-y-2">
-              <label className="block font-mono text-xs text-inkFaint">
-                your design — round {round} of {scenario.maxRounds}
-              </label>
-              <textarea
-                className="w-full h-40 bg-white/60 border border-paperLine focus:border-stamp outline-none px-3 py-2 text-[15px]"
-                placeholder="Describe your approach: what you'd build, key decisions, trade-offs, and how you'd explain it to a teammate who has to pick it up..."
-                value={submissionText}
-                onChange={(e) => setSubmissionText(e.target.value)}
-                disabled={step === "reviewing"}
-              />
-              <button
-                onClick={handleSubmitDesign}
-                disabled={submissionText.trim().length < 10 || step === "reviewing"}
-                className="bg-stamp text-paper font-medium px-5 py-2.5 text-sm disabled:opacity-30"
-              >
-                {step === "reviewing" ? "senior is reviewing..." : "submit to senior"}
-              </button>
-            </div>
-          )}
-
-          {step === "done" && latestResult && (
-            <div className="border border-paperLine px-5 py-5 space-y-2">
-              <h3 className="font-display text-lg">
-                {latestResult.passed ? "Design approved" : "Round limit reached"}
-              </h3>
-              <p className="text-[15px] text-inkFaint">
-                final score — <span className="font-mono text-ink">{latestResult.score}/100</span>
-              </p>
-              <button
-                onClick={handleRestart}
-                className="mt-2 border border-ink px-4 py-2 text-sm hover:bg-ink hover:text-paper transition-colors"
-              >
-                Try another scenario
-              </button>
-            </div>
-          )}
-        </section>
+      {(step === "workspace" || step === "results") && activeTask?.scenario && profile && (
+        <MentorWidget scenario={activeTask.scenario} mentorStyle={profile.mentorStyle} />
       )}
     </main>
-  );
-}
-
-function ScenarioCard({ scenario, round }: { scenario: Scenario; round: number }) {
-  return (
-    <div>
-      <div className="border border-paperLine bg-white/60 px-5 pt-4 pb-5">
-        <div className="flex items-baseline justify-between gap-4 mb-3">
-          <span className="font-mono text-xs text-stamp">{scenario.role}</span>
-          <span className="font-mono text-xs text-inkFaint whitespace-nowrap">
-            round {round}/{scenario.maxRounds}
-          </span>
-        </div>
-        <h2 className="font-display text-xl mb-2">{scenario.title}</h2>
-        <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{scenario.stakes}</p>
-        <p className="text-[15px] text-inkFaint italic mt-3 border-t border-paperLine pt-3">
-          {scenario.task}
-        </p>
-      </div>
-      <div className="ticket-edge" />
-    </div>
-  );
-}
-
-function FeedbackPanel({ result }: { result: ReviewResult }) {
-  return (
-    <div className="border border-paperLine px-5 py-4">
-      <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-xs text-inkFaint">round {result.round} review</span>
-        <span className={`font-mono text-sm ${result.passed ? "text-good" : "text-ink"}`}>
-          {result.score}/100
-        </span>
-      </div>
-      <ul className="space-y-1.5 mb-3">
-        {result.perCriterion.map((c) => (
-          <li key={c.id} className="text-[15px] flex gap-2">
-            <span className={c.met ? "text-good" : "text-bad"}>{c.met ? "✓" : "✗"}</span>
-            <span>{c.comment}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="text-[15px] text-inkFaint border-t border-paperLine pt-3">
-        {result.overallFeedback}
-      </p>
-    </div>
   );
 }

@@ -25,7 +25,17 @@ Respond with ONLY a raw JSON object, no markdown fences, no commentary, matching
 
 export async function POST(req: NextRequest) {
   try {
-    const { syllabusText, subjectHint } = await req.json();
+    const {
+      syllabusText,
+      subjectHint,
+      focusTopic,
+      focusDescription,
+    }: {
+      syllabusText: string;
+      subjectHint?: string;
+      focusTopic?: string;
+      focusDescription?: string;
+    } = await req.json();
 
     if (!syllabusText || typeof syllabusText !== "string" || syllabusText.trim().length < 20) {
       return NextResponse.json(
@@ -40,7 +50,13 @@ export async function POST(req: NextRequest) {
 """
 ${syllabusText.slice(0, 8000)}
 """
-
+${
+  focusTopic
+    ? `\nThe student has already picked a specific task from this material: "${focusTopic}" — ${
+        focusDescription || ""
+      }\nScope the scenario to THIS task only, not the whole material above (the material is context, not the whole scope).\n`
+    : ""
+}
 Generate the scenario JSON now.`;
 
     const scenario = await completeJSON<Scenario>(SYSTEM_PROMPT, userPrompt);

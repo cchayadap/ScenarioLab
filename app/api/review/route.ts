@@ -17,6 +17,9 @@ Rules:
   and more realistic — but only include a twist sometimes, not every round, and never on the final round.
 - Keep overallFeedback to 2-4 sentences, in-character as a senior, not a grading rubric read-out.
 - score is 0-100, roughly proportional to criteria met, but you can adjust slightly for quality of reasoning.
+- If source material was provided, include a short "anecdote": one sentence pulling a specific, concrete
+  detail from that material (not generic advice) that would help the student improve the weakest criterion.
+  Omit it (null) if no source material was given or nothing specific enough applies.
 
 Respond with ONLY a raw JSON object, no markdown fences, no commentary, matching exactly:
 {
@@ -24,7 +27,8 @@ Respond with ONLY a raw JSON object, no markdown fences, no commentary, matching
   "overallFeedback": string,
   "score": number,
   "passed": boolean,
-  "twist": string | null
+  "twist": string | null,
+  "anecdote": string | null
 }`;
 
 export async function POST(req: NextRequest) {
@@ -35,11 +39,13 @@ export async function POST(req: NextRequest) {
       submissionText,
       round,
       history,
+      lectureText,
     }: {
       scenario: Scenario;
       submissionText: string;
       round: number;
       history: SubmissionRound[];
+      lectureText?: string;
     } = body;
 
     if (!scenario || !submissionText || typeof submissionText !== "string") {
@@ -68,7 +74,7 @@ Max rounds: ${scenario.maxRounds}
 Current round: ${round}
 
 ${historyBlock ? `Prior rounds:\n${historyBlock}\n` : ""}
-
+${lectureText ? `\nSource material this task was derived from:\n"""\n${lectureText.slice(0, 4000)}\n"""\n` : ""}
 Student's current submission (round ${round}):
 """
 ${submissionText.slice(0, 6000)}
@@ -90,6 +96,7 @@ Review it now and respond with the JSON object.`;
       passed: raw.passed,
       twist: isFinalRound ? undefined : raw.twist || undefined,
       gameOver: raw.passed || isFinalRound,
+      anecdote: raw.anecdote || undefined,
     };
 
     return NextResponse.json({ result });
