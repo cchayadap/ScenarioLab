@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ReviewResult, Scenario, SubmissionRound } from "@/lib/types";
+import { AnswerDiagram, ReviewResult, Scenario, SubmissionRound } from "@/lib/types";
+import DiagramEditor from "./DiagramEditor";
 
 export default function WorkspaceScreen({
   scenario,
@@ -11,6 +12,7 @@ export default function WorkspaceScreen({
   simplifiedNotes,
   submissionText,
   onSubmissionChange,
+  onDiagramChange,
   onSubmit,
   onRequestHint,
   onSimplify,
@@ -24,6 +26,7 @@ export default function WorkspaceScreen({
   simplifiedNotes: string[];
   submissionText: string;
   onSubmissionChange: (text: string) => void;
+  onDiagramChange: (diagram: AnswerDiagram) => void;
   onSubmit: () => void;
   onRequestHint: () => Promise<{ ok: true; hint: string } | { ok: false; error: string }>;
   onSimplify: () => Promise<{ ok: true; text: string } | { ok: false; error: string }>;
@@ -31,6 +34,7 @@ export default function WorkspaceScreen({
   activeTwist: string | null;
 }) {
   const [showDescription, setShowDescription] = useState(true);
+  const [showDiagram, setShowDiagram] = useState(false);
   const [hintLoading, setHintLoading] = useState(false);
   const [hintError, setHintError] = useState<string | null>(null);
   const [simplifyLoading, setSimplifyLoading] = useState(false);
@@ -108,7 +112,12 @@ export default function WorkspaceScreen({
       {history.length > 0 && (
         <div className="space-y-4">
           {history.map((h) => (
-            <FeedbackPanel key={h.round} submissionText={h.submissionText} result={h.result} />
+            <FeedbackPanel
+              key={h.round}
+              submissionText={h.submissionText}
+              diagram={h.diagram}
+              result={h.result}
+            />
           ))}
         </div>
       )}
@@ -124,6 +133,21 @@ export default function WorkspaceScreen({
           onChange={(e) => onSubmissionChange(e.target.value)}
           disabled={submitting}
         />
+
+        <div>
+          <button
+            onClick={() => setShowDiagram((s) => !s)}
+            disabled={submitting}
+            className="font-mono text-xs text-inkFaint underline underline-offset-2"
+          >
+            {showDiagram ? "hide diagram" : "+ add a diagram (optional)"}
+          </button>
+          {showDiagram && (
+            <div className="mt-2">
+              <DiagramEditor key={round} onChange={onDiagramChange} />
+            </div>
+          )}
+        </div>
 
         {hints.map((h, i) => (
           <div key={i} className="border-l-2 border-paperLine pl-3 py-1 text-[14px] text-inkFaint">
@@ -168,9 +192,11 @@ export default function WorkspaceScreen({
 
 function FeedbackPanel({
   submissionText,
+  diagram,
   result,
 }: {
   submissionText: string;
+  diagram?: AnswerDiagram;
   result: ReviewResult;
 }) {
   const [showSubmission, setShowSubmission] = useState(true);
@@ -202,6 +228,11 @@ function FeedbackPanel({
             <p className="mt-2 text-[14px] font-mono text-inkFaint whitespace-pre-wrap border-l-2 border-paperLine pl-3">
               {submissionText}
             </p>
+          )}
+          {showSubmission && diagram && diagram.nodes.length > 0 && (
+            <div className="mt-2">
+              <DiagramEditor initialDiagram={diagram} readOnly />
+            </div>
           )}
         </div>
         <ul className="space-y-1.5 border-t border-paperLine pt-3">

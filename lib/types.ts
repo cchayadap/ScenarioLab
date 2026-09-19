@@ -45,9 +45,33 @@ export interface ReviewResult {
   diagram?: ReviewDiagram; // visual of a strong solution's structure, shown alongside modelAnswers at gameOver
 }
 
+// A student-built flowchart attached to a submission — deliberately minimal (three node
+// kinds, optional edge labels) so the editor stays a few buttons and a canvas, not a full
+// diagramming app. Positions are student-placed, not auto-laid-out.
+export interface AnswerDiagramNode {
+  id: string;
+  kind: "start" | "process" | "decision";
+  label: string;
+  x: number;
+  y: number;
+}
+
+export interface AnswerDiagramEdge {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+}
+
+export interface AnswerDiagram {
+  nodes: AnswerDiagramNode[];
+  edges: AnswerDiagramEdge[];
+}
+
 export interface SubmissionRound {
   round: number;
   submissionText: string;
+  diagram?: AnswerDiagram; // optional flowchart the student built alongside their written answer
   result: ReviewResult;
 }
 
