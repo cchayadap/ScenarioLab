@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ReviewResult, Scenario } from "@/lib/types";
+import MermaidDiagram from "./MermaidDiagram";
 
 export default function ResultsScreen({
   scenario,
@@ -89,6 +90,32 @@ export default function ResultsScreen({
           <div className="border-l-2 border-stamp pl-3 py-1 text-[14px]">
             <span className="font-mono text-xs text-stamp block mb-0.5">from your material</span>
             {result.anecdote}
+          </div>
+        )}
+
+        {gameOver && result.diagram && (
+          <div className="border-t border-paperLine pt-3">
+            <div className="border border-paperLine bg-paper p-3">
+              <MermaidDiagram definition={result.diagram.mermaid} title={result.diagram.title} />
+            </div>
+          </div>
+        )}
+
+        {gameOver && result.modelAnswers && result.modelAnswers.length > 0 && (
+          <div className="space-y-2 border-t border-paperLine pt-3">
+            <p className="font-mono text-xs text-inkFaint">
+              other strong answers, for comparison
+            </p>
+            <div className="space-y-3">
+              {result.modelAnswers.map((m, i) => (
+                <div key={i} className="border border-paperLine bg-paper p-3 space-y-1">
+                  <p className="font-mono text-[11px] text-stamp uppercase tracking-wide">
+                    {m.label}
+                  </p>
+                  <p className="text-[14px] text-inkFaint leading-relaxed">{m.text}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         </div>

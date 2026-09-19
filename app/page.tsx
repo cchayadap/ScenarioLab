@@ -19,6 +19,7 @@ import WorkspaceScreen from "./components/WorkspaceScreen";
 import ResultsScreen from "./components/ResultsScreen";
 import MentorWidget from "./components/MentorWidget";
 import SettingsMenu from "./components/SettingsMenu";
+import MentorAvatar from "./components/MentorAvatar";
 import { MENTOR_INFO } from "@/lib/mentor";
 
 type Step =
@@ -305,6 +306,11 @@ export default function Home() {
     setStep("welcome");
   }
 
+  function goHome() {
+    setError(null);
+    setStep(profile ? "lesson" : "welcome");
+  }
+
   if (step === "welcome") {
     return <WelcomeScreen onSignIn={handleSignIn} />;
   }
@@ -344,9 +350,10 @@ export default function Home() {
 
         <div className="px-6 py-8">
           <header className="mb-8 border-b border-paperLine pb-5">
-            <p className="font-mono text-xs text-inkFaint mb-1">intake / new assignment</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="ScenarioLab" className="h-20 w-auto" />
+            <button onClick={goHome} aria-label="Go to home">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="ScenarioLab" className="h-20 w-auto" />
+            </button>
           </header>
 
           {error && (
@@ -369,7 +376,11 @@ export default function Home() {
 
       {step === "tasks" && session && profile && (
         <div className="flex items-start gap-3 border-l-2 border-stamp pl-3 py-1">
-          <span className="text-xl leading-none">{MENTOR_INFO[profile.mentorStyle].emoji}</span>
+          <MentorAvatar
+            src={MENTOR_INFO[profile.mentorStyle].images.neutral}
+            alt={MENTOR_INFO[profile.mentorStyle].name}
+            className="w-14 h-14"
+          />
           <p className="text-[15px]">
             <span className="font-medium">{MENTOR_INFO[profile.mentorStyle].name}:</span> here&apos;s
             the material broken into jobs — pick a folder on the left and I&apos;ll get you set up.
@@ -419,8 +430,8 @@ export default function Home() {
         </div>
       </div>
 
-      {(step === "workspace" || step === "results") && activeTask?.scenario && profile && (
-        <MentorWidget scenario={activeTask.scenario} mentorStyle={profile.mentorStyle} />
+      {profile && step !== "loading" && step !== "onboarding" && (
+        <MentorWidget scenario={activeTask?.scenario} mentorStyle={profile.mentorStyle} />
       )}
     </main>
   );
