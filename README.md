@@ -1,76 +1,25 @@
-# Internship Simulator (hackathon prototype)
+ScenarioLab: learn the theory, practice the workflow
 
-Paste course material (syllabus, slides, notes) → get dropped into a realistic
-internship scenario in a relevant role → design a solution (no code required) →
-an AI "senior" reviews your design against a rubric derived from the material →
-loop until it passes or you hit the round cap.
+Every student asks, "Why do I need to learn this?" Most never find out, and the doubt drains attention and interest. Knowing a subject isn't the same as knowing how to use it at work, where the skill is the thought process: reading a brief, weighing trade-offs, designing a solution, and explaining it so others can build it.
 
-## Setup
+What ScenarioLab does ?
+Paste a lecture, syllabus or slides. ScenarioLab turns them into a simulated workplace situation:
+1. AI splits the material into tasks.
+2. Each task becomes a realistic scenario with a role, stakes, constraints and a rubric, tailored to the student's career goal (big tech, startup or research lab).
+3. The student designs the solution and describes the workflow step by step, in words, as a drag-and-drop flowchart, or both. There's no code and no real build, so the time goes into thinking and explaining.
+4. An AI "senior" reviews the design against the rubric, with scored feedback on what's strong and what's missing. The student gets up to 3 rounds to improve, then sees a suggested answer compared with their own. (Confirm this matches how your rounds end.)
+5. If they're stuck, they can ask for a hint, a simpler version of the question, or a chat with one of two mentors (Casey, who is kind, or Morgan, who is busy), each with their own tone.
+Over time, a lightweight mastery view shows recurring weak spots and pass rate across tasks.
 
-```bash
-npm install
-cp .env.example .env.local   # then add your GEMINI_API_KEY
-npm run dev
-```
+The AI is prompted to evaluate, not to reveal. The reviewer points at gaps without giving the answer, and the mentor refuses requests to hand over the solution, including "ignore your instructions" style attempts. Course material and user input are filtered before they reach the model. No system can fully stop a student from copying elsewhere. The design goal is to make thinking the easiest path: answers must be structured designs, and each round pushes back on specifics.
 
-Open http://localhost:3000
+How we built it:
+- Next.js 14 (App Router), React 18, TypeScript, Tailwind (custom "workstation" theme)
+- Google Gemini via @google/genai, powering task breakdown, scenario writing, grading, hints and mentor chat through small API routes, each with a tightly scoped prompt
+- Mermaid.js for AI-generated diagrams and React Flow for student-built flowcharts
+- unpdf and jszip to parse PDF and PPTX lectures
+- Browser local Storage only: no accounts and no database, so the app is private and zero-setup
+- Deployed on Vercel
 
-You need a Google Gemini API key (aistudio.google.com/apikey — free tier, no
-credit card required to start). The model is set in `lib/gemini.ts` — the
-default is `gemini-1.5-flash`; swap to `gemini-2.0-flash` or similar if your
-key has access and you want a stronger model.
-
-Gemini's `responseMimeType: "application/json"` mode is used so the model
-returns clean JSON directly, without needing to strip markdown fences the way
-a plain-text completion would.
-
-## Architecture
-
-```
-app/
-  page.tsx                     <- client-side game state machine (setup -> playing -> reviewing -> done)
-  api/generate-scenario/route.ts  <- syllabus text -> {role, stakes, task, rubric}
-  api/review/route.ts             <- submission + rubric + history -> per-criterion verdict + score + twist
-lib/
-  gemini.ts                    <- Gemini API wrapper, JSON-mode completion helper
-  types.ts                     <- shared Scenario / ReviewResult / SubmissionRound types
-```
-
-**Why two separate API calls instead of one:** scenario generation happens once
-per game; review happens once per round. Keeping them separate means the rubric
-is generated fresh from the syllabus (grounded in what the student actually gave
-us) and then held fixed for the whole game — the senior grades against the same
-rubric every round, so feedback is consistent across rounds instead of drifting.
-
-**Where the "game" feel comes from:**
-- Rubric checklist per round (✓/✗ with a specific comment, not a generic score)
-- Round cap (`scenario.maxRounds`, default 3) with a hard game-over condition
-- Optional "twist" the senior can inject between rounds — a requirement change
-  or curveball, generated from the same conversation history, so round 2/3 can
-  escalate rather than just re-grading the same static ask
-
-**Grading logic** lives entirely in the `review` route's system prompt (see the
-comment there for the pass/fail thresholds) — tune this first if the senior feels
-too lenient or too harsh in testing. Test it against at least one deliberately
-bad and one deliberately strong submission before your demo.
-
-## Known limitations / things we cut for hackathon scope
-
-- No file upload parsing (PDF/PPTX) — students paste text directly. Adding a
-  parser (e.g. `pdf-parse` or a slides-to-text step) is the natural next feature.
-- No persistence — refreshing the page loses your run. Fine for a live demo,
-  not fine for a real product; would need a DB (or just localStorage first).
-- Rubric criteria are generated per-scenario by the model, not curated by humans
-  — good enough for a demo, but for real use you'd want subject-matter review
-  of a bank of rubrics rather than trusting fully automatic generation.
-- Currently scoped to STEM subjects — the scenario-generation prompt assumes
-  fairly technical material; non-STEM course material may produce weaker scenarios.
-
-## Suggested demo script (~90 sec)
-
-1. Paste a real snippet from your Database Systems slides. Generate scenario.
-2. Show the scenario card (role + informal, slightly ambiguous "manager ask").
-3. Submit a deliberately incomplete first design.
-4. Show the senior's feedback: some ✓, some ✗, a specific critique, plus a twist.
-5. Submit a stronger revised design incorporating the twist. Show it pass.
-6. Close on the score / "design approved" screen.
+Who it's for and what's next ?
+ScenarioLab currently fits computer science best, where we know the professional workflow well. The pattern of role, constraints, design, senior review and revision applies to any field with a professional practice. To further improve, we'll need more insights and research on other fields actually work, so each subject's scenarios and feedback match how that field really operates.
